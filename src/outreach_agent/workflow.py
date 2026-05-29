@@ -6,12 +6,18 @@ from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
+from outreach_agent.llm import LLMProvider
 from outreach_agent.models import (
     EnrichmentStep,
+    GeneratedEmail,
+    IcpScore,
     LeadIntake,
     LeadProfile,
     LeadRunResponse,
+    PlannedTouch,
+    Route,
     RunTimings,
+    SequencePlan,
     ThinDataCheck,
 )
 
@@ -36,6 +42,36 @@ REQUIRED_PROFILE_FIELDS = (
 )
 
 MOCK_API_ENRICHMENT: MockEnrichmentData = {
+    "nimbusforge.ai": {
+        "lead_title": "VP Sales",
+        "industry": "AI software",
+        "company_size_range": "201-500 employees",
+        "region": "North America",
+        "company_description": (
+            "NimbusForge AI is a B2B software company helping enterprise GTM "
+            "teams automate revenue workflows."
+        ),
+        "business_signals": [
+            "Hiring SDRs and RevOps roles",
+            "Recently launched an AI workflow product",
+            "Scaling outbound personalization for enterprise sales",
+        ],
+    },
+    "nimbusforge ai": {
+        "lead_title": "VP Sales",
+        "industry": "AI software",
+        "company_size_range": "201-500 employees",
+        "region": "North America",
+        "company_description": (
+            "NimbusForge AI is a B2B software company helping enterprise GTM "
+            "teams automate revenue workflows."
+        ),
+        "business_signals": [
+            "Hiring SDRs and RevOps roles",
+            "Recently launched an AI workflow product",
+            "Scaling outbound personalization for enterprise sales",
+        ],
+    },
     "papertrail-cafe.example": {
         "industry": "Local hospitality",
         "region": "North America",
@@ -55,11 +91,41 @@ MOCK_SCRAPE_ENRICHMENT: MockEnrichmentData = {
     },
 }
 
+HOT_SEQUENCE = SequencePlan(
+    route="hot",
+    name="Hot sequence",
+    style=(
+        "High-priority, concise, highly personalized, direct CTA focused on "
+        "urgent GTM or revenue workflow pain."
+    ),
+    planned_touches=[
+        PlannedTouch(
+            touch_number=1,
+            timing="day 0",
+            channel="email",
+            goal="Lead with the strongest GTM pain signal and ask for a meeting.",
+        ),
+        PlannedTouch(
+            touch_number=2,
+            timing="day 2",
+            channel="email",
+            goal="Reinforce urgency with a relevant outbound workflow angle.",
+        ),
+        PlannedTouch(
+            touch_number=3,
+            timing="day 5",
+            channel="email",
+            goal="Offer a concise proof point and direct next step.",
+        ),
+    ],
+)
 
-def process_lead(
+
+async def process_lead(
     intake: LeadIntake,
     *,
     artifact_dir: Path = RUNS_DIR,
+    llm_provider: LLMProvider,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
     started_timer = perf_counter()
@@ -82,17 +148,46 @@ def process_lead(
         )
 
     final_check = thin_data_checks[-1]
+    missing_critical_fields = final_check.missing_required_fields
+    llm_calls: list[str] = []
+    scoring_result: IcpScore | None = None
+    final_route: Route | None = None
+    selected_sequence: SequencePlan | None = None
+    generated_email: GeneratedEmail | None = None
+    status: Literal["insufficient_data", "routed"] = "insufficient_data"
+
+    if not final_check.is_thin:
+        scoring_result = await llm_provider.score_icp(profile)
+        llm_calls.append("score_icp")
+        final_route = route_from_score(
+            scoring_result,
+            missing_critical_fields=missing_critical_fields,
+        )
+        selected_sequence = select_sequence(final_route)
+        generated_email = await llm_provider.generate_first_email(
+            profile,
+            scoring_result,
+            final_route,
+            selected_sequence,
+        )
+        llm_calls.append("generate_first_email")
+        status = "routed"
+
     completed_at = datetime.now(UTC)
     artifact_path = build_artifact_path(artifact_dir, started_at, run_id)
     response = LeadRunResponse(
         run_id=run_id,
-        status="insufficient_data",
+        status=status,
         intake=intake,
         profile=profile,
         enrichment_steps=enrichment_steps,
         thin_data_checks=thin_data_checks,
-        missing_critical_fields=final_check.missing_required_fields,
-        llm_calls=[],
+        missing_critical_fields=missing_critical_fields,
+        llm_calls=llm_calls,
+        scoring_result=scoring_result,
+        final_route=final_route,
+        selected_sequence=selected_sequence,
+        generated_email=generated_email,
         timings=RunTimings(
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
@@ -103,6 +198,26 @@ def process_lead(
     persist_run_artifact(response, artifact_path)
     log_run_summary(response)
     return response
+
+
+def route_from_score(
+    scoring_result: IcpScore,
+    *,
+    missing_critical_fields: list[str],
+) -> Route:
+    if scoring_result.score >= 80 and not missing_critical_fields:
+        if scoring_result.confidence != "low":
+            return "hot"
+        return "warm"
+    if scoring_result.score >= 50:
+        return "warm"
+    return "cold"
+
+
+def select_sequence(route: Route) -> SequencePlan:
+    if route == "hot":
+        return HOT_SEQUENCE
+    raise ValueError(f"No sequence plan implemented for route: {route}")
 
 
 def log_run_summary(response: LeadRunResponse) -> None:

@@ -2,6 +2,9 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+Route = Literal["hot", "warm", "cold"]
+Confidence = Literal["high", "medium", "low"]
+
 
 class LeadIntake(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -51,6 +54,36 @@ class ThinDataCheck(BaseModel):
     missing_required_fields: list[str]
 
 
+class IcpScore(BaseModel):
+    score: int = Field(ge=0, le=100)
+    confidence: Confidence
+    positive_evidence: list[str]
+    negative_evidence: list[str]
+    missing_evidence: list[str]
+    reasoning: str
+
+
+class PlannedTouch(BaseModel):
+    touch_number: int
+    timing: str
+    channel: Literal["email"]
+    goal: str
+
+
+class SequencePlan(BaseModel):
+    route: Route
+    name: str
+    style: str
+    planned_touches: list[PlannedTouch]
+
+
+class GeneratedEmail(BaseModel):
+    subject: str
+    body: str
+    cta: str
+    personalization_notes: list[str]
+
+
 class RunTimings(BaseModel):
     started_at: str
     completed_at: str
@@ -59,12 +92,16 @@ class RunTimings(BaseModel):
 
 class LeadRunResponse(BaseModel):
     run_id: str
-    status: Literal["insufficient_data"]
+    status: Literal["insufficient_data", "routed"]
     intake: LeadIntake
     profile: LeadProfile
     enrichment_steps: list[EnrichmentStep]
     thin_data_checks: list[ThinDataCheck]
     missing_critical_fields: list[str]
     llm_calls: list[str] = Field(default_factory=list)
+    scoring_result: IcpScore | None = None
+    final_route: Route | None = None
+    selected_sequence: SequencePlan | None = None
+    generated_email: GeneratedEmail | None = None
     timings: RunTimings
     artifact_path: str
