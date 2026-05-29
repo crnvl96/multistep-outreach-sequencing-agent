@@ -1,0 +1,120 @@
+from dataclasses import dataclass
+from typing import Literal
+
+from outreach_agent.models import LeadProfile
+
+EnrichmentStage = Literal["api", "scrape"]
+MockPatch = dict[str, object]
+MockEnrichmentData = dict[str, MockPatch]
+
+
+@dataclass(frozen=True)
+class MockLeadFixture:
+    key: str
+    aliases: tuple[str, ...]
+    api_patch: MockPatch
+    scrape_patch: MockPatch
+
+
+MOCK_LEAD_FIXTURES = (
+    MockLeadFixture(
+        key="warm",
+        aliases=("signalspring.io", "signalspring software"),
+        api_patch={
+            "lead_title": "Head of Growth",
+            "industry": "B2B SaaS",
+            "company_size_range": "51-200 employees",
+            "region": "Europe",
+        },
+        scrape_patch={
+            "company_description": (
+                "SignalSpring Software helps revenue teams monitor pipeline health "
+                "and prioritize account follow-up."
+            ),
+            "business_signals": [
+                "Publishing educational content about RevOps process gaps",
+                "Evaluating outbound workflow improvements",
+            ],
+        },
+    ),
+    MockLeadFixture(
+        key="hot",
+        aliases=("nimbusforge.ai", "nimbusforge ai"),
+        api_patch={
+            "lead_title": "VP Sales",
+            "industry": "AI software",
+            "company_size_range": "201-500 employees",
+            "region": "North America",
+            "company_description": (
+                "NimbusForge AI is a B2B software company helping enterprise GTM "
+                "teams automate revenue workflows."
+            ),
+            "business_signals": [
+                "Hiring SDRs and RevOps roles",
+                "Recently launched an AI workflow product",
+                "Scaling outbound personalization for enterprise sales",
+            ],
+        },
+        scrape_patch={},
+    ),
+    MockLeadFixture(
+        key="insufficient_data",
+        aliases=("papertrail-cafe.example", "papertrail cafe"),
+        api_patch={
+            "industry": "Local hospitality",
+            "region": "North America",
+        },
+        scrape_patch={
+            "company_description": (
+                "A small neighborhood cafe with a simple brochure site."
+            ),
+        },
+    ),
+)
+
+
+def normalize_lookup_key(value: str) -> str:
+    normalized = value.strip().lower()
+    normalized = normalized.removeprefix("https://")
+    normalized = normalized.removeprefix("http://")
+    normalized = normalized.removeprefix("www.")
+    return normalized.rstrip("/")
+
+
+FIXTURE_KEY_BY_ALIAS = {
+    normalize_lookup_key(alias): fixture.key
+    for fixture in MOCK_LEAD_FIXTURES
+    for alias in fixture.aliases
+}
+
+
+def build_mock_enrichment_map(stage: EnrichmentStage) -> MockEnrichmentData:
+    enrichment_map: MockEnrichmentData = {}
+    for fixture in MOCK_LEAD_FIXTURES:
+        patch = fixture.api_patch if stage == "api" else fixture.scrape_patch
+        if not patch:
+            continue
+        for alias in fixture.aliases:
+            enrichment_map[normalize_lookup_key(alias)] = copy_patch(patch)
+    return enrichment_map
+
+
+def fixture_key_for_profile(profile: LeadProfile) -> str:
+    for key in lookup_keys(profile):
+        if key in FIXTURE_KEY_BY_ALIAS:
+            return FIXTURE_KEY_BY_ALIAS[key]
+    raise ValueError(f"No mock lead fixture configured for {profile.company_name}")
+
+
+def lookup_keys(profile: LeadProfile) -> list[str]:
+    keys = [profile.company_domain, profile.company_name]
+    if profile.lead_email and "@" in profile.lead_email:
+        keys.append(profile.lead_email.rsplit("@", maxsplit=1)[1])
+    return [normalize_lookup_key(key) for key in keys if key]
+
+
+def copy_patch(patch: MockPatch) -> MockPatch:
+    copied: MockPatch = {}
+    for key, value in patch.items():
+        copied[key] = list(value) if isinstance(value, list) else value
+    return copied

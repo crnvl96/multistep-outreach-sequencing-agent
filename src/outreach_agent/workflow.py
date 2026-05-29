@@ -6,6 +6,11 @@ from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
+from outreach_agent.fixtures import (
+    MockEnrichmentData,
+    build_mock_enrichment_map,
+    lookup_keys,
+)
 from outreach_agent.llm import LLMProvider
 from outreach_agent.models import (
     EnrichmentStep,
@@ -26,8 +31,6 @@ server_logger = logging.getLogger("uvicorn.error")
 
 EnrichmentSource = Literal["mock_api", "mock_scrape"]
 ThinDataStage = Literal["after_api_enrichment", "after_scrape_enrichment"]
-MockEnrichmentData = dict[str, dict[str, object]]
-
 RUNS_DIR = Path("runs")
 REQUIRED_PROFILE_FIELDS = (
     "lead_name",
@@ -41,145 +44,67 @@ REQUIRED_PROFILE_FIELDS = (
     "business_signals",
 )
 
-MOCK_API_ENRICHMENT: MockEnrichmentData = {
-    "signalspring.io": {
-        "lead_title": "Head of Growth",
-        "industry": "B2B SaaS",
-        "company_size_range": "51-200 employees",
-        "region": "Europe",
-    },
-    "signalspring software": {
-        "lead_title": "Head of Growth",
-        "industry": "B2B SaaS",
-        "company_size_range": "51-200 employees",
-        "region": "Europe",
-    },
-    "nimbusforge.ai": {
-        "lead_title": "VP Sales",
-        "industry": "AI software",
-        "company_size_range": "201-500 employees",
-        "region": "North America",
-        "company_description": (
-            "NimbusForge AI is a B2B software company helping enterprise GTM "
-            "teams automate revenue workflows."
-        ),
-        "business_signals": [
-            "Hiring SDRs and RevOps roles",
-            "Recently launched an AI workflow product",
-            "Scaling outbound personalization for enterprise sales",
-        ],
-    },
-    "nimbusforge ai": {
-        "lead_title": "VP Sales",
-        "industry": "AI software",
-        "company_size_range": "201-500 employees",
-        "region": "North America",
-        "company_description": (
-            "NimbusForge AI is a B2B software company helping enterprise GTM "
-            "teams automate revenue workflows."
-        ),
-        "business_signals": [
-            "Hiring SDRs and RevOps roles",
-            "Recently launched an AI workflow product",
-            "Scaling outbound personalization for enterprise sales",
-        ],
-    },
-    "papertrail-cafe.example": {
-        "industry": "Local hospitality",
-        "region": "North America",
-    },
-    "papertrail cafe": {
-        "industry": "Local hospitality",
-        "region": "North America",
-    },
-}
+MOCK_API_ENRICHMENT = build_mock_enrichment_map("api")
+MOCK_SCRAPE_ENRICHMENT = build_mock_enrichment_map("scrape")
 
-MOCK_SCRAPE_ENRICHMENT: MockEnrichmentData = {
-    "signalspring.io": {
-        "company_description": (
-            "SignalSpring Software helps revenue teams monitor pipeline health "
-            "and prioritize account follow-up."
+SEQUENCES_BY_ROUTE: dict[Route, SequencePlan] = {
+    "hot": SequencePlan(
+        route="hot",
+        name="Hot sequence",
+        style=(
+            "High-priority, concise, highly personalized, direct CTA focused on "
+            "urgent GTM or revenue workflow pain."
         ),
-        "business_signals": [
-            "Publishing educational content about RevOps process gaps",
-            "Evaluating outbound workflow improvements",
+        planned_touches=[
+            PlannedTouch(
+                touch_number=1,
+                timing="day 0",
+                channel="email",
+                goal="Lead with the strongest GTM pain signal and ask for a meeting.",
+            ),
+            PlannedTouch(
+                touch_number=2,
+                timing="day 2",
+                channel="email",
+                goal="Reinforce urgency with a relevant outbound workflow angle.",
+            ),
+            PlannedTouch(
+                touch_number=3,
+                timing="day 5",
+                channel="email",
+                goal="Offer a concise proof point and direct next step.",
+            ),
         ],
-    },
-    "signalspring software": {
-        "company_description": (
-            "SignalSpring Software helps revenue teams monitor pipeline health "
-            "and prioritize account follow-up."
-        ),
-        "business_signals": [
-            "Publishing educational content about RevOps process gaps",
-            "Evaluating outbound workflow improvements",
-        ],
-    },
-    "papertrail-cafe.example": {
-        "company_description": "A small neighborhood cafe with a simple brochure site.",
-    },
-    "papertrail cafe": {
-        "company_description": "A small neighborhood cafe with a simple brochure site.",
-    },
-}
-
-HOT_SEQUENCE = SequencePlan(
-    route="hot",
-    name="Hot sequence",
-    style=(
-        "High-priority, concise, highly personalized, direct CTA focused on "
-        "urgent GTM or revenue workflow pain."
     ),
-    planned_touches=[
-        PlannedTouch(
-            touch_number=1,
-            timing="day 0",
-            channel="email",
-            goal="Lead with the strongest GTM pain signal and ask for a meeting.",
+    "warm": SequencePlan(
+        route="warm",
+        name="Warm sequence",
+        style=(
+            "Consultative, educational, moderate CTA focused on relevance and "
+            "potential fit."
         ),
-        PlannedTouch(
-            touch_number=2,
-            timing="day 2",
-            channel="email",
-            goal="Reinforce urgency with a relevant outbound workflow angle.",
-        ),
-        PlannedTouch(
-            touch_number=3,
-            timing="day 5",
-            channel="email",
-            goal="Offer a concise proof point and direct next step.",
-        ),
-    ],
-)
-
-WARM_SEQUENCE = SequencePlan(
-    route="warm",
-    name="Warm sequence",
-    style=(
-        "Consultative, educational, moderate CTA focused on relevance and "
-        "potential fit."
+        planned_touches=[
+            PlannedTouch(
+                touch_number=1,
+                timing="day 0",
+                channel="email",
+                goal="Share a relevant observation and invite a light conversation.",
+            ),
+            PlannedTouch(
+                touch_number=2,
+                timing="day 4",
+                channel="email",
+                goal="Offer a useful GTM workflow angle tied to the observed signals.",
+            ),
+            PlannedTouch(
+                touch_number=3,
+                timing="day 9",
+                channel="email",
+                goal="Ask whether improving outbound qualification is a priority.",
+            ),
+        ],
     ),
-    planned_touches=[
-        PlannedTouch(
-            touch_number=1,
-            timing="day 0",
-            channel="email",
-            goal="Share a relevant observation and invite a light conversation.",
-        ),
-        PlannedTouch(
-            touch_number=2,
-            timing="day 4",
-            channel="email",
-            goal="Offer a useful GTM workflow angle tied to the observed signals.",
-        ),
-        PlannedTouch(
-            touch_number=3,
-            timing="day 9",
-            channel="email",
-            goal="Ask whether improving outbound qualification is a priority.",
-        ),
-    ],
-)
+}
 
 
 async def process_lead(
@@ -276,11 +201,10 @@ def route_from_score(
 
 
 def select_sequence(route: Route) -> SequencePlan:
-    if route == "hot":
-        return HOT_SEQUENCE
-    if route == "warm":
-        return WARM_SEQUENCE
-    raise ValueError(f"No sequence plan implemented for route: {route}")
+    try:
+        return SEQUENCES_BY_ROUTE[route]
+    except KeyError as exc:
+        raise ValueError(f"No sequence plan implemented for route: {route}") from exc
 
 
 def log_run_summary(response: LeadRunResponse) -> None:
@@ -331,21 +255,6 @@ def lookup_mock_data(
         if key in enrichment_data:
             return enrichment_data[key]
     return {}
-
-
-def lookup_keys(profile: LeadProfile) -> list[str]:
-    keys = [profile.company_domain, profile.company_name]
-    if profile.lead_email and "@" in profile.lead_email:
-        keys.append(profile.lead_email.rsplit("@", maxsplit=1)[1])
-    return [normalize_lookup_key(key) for key in keys if key]
-
-
-def normalize_lookup_key(value: str) -> str:
-    normalized = value.strip().lower()
-    normalized = normalized.removeprefix("https://")
-    normalized = normalized.removeprefix("http://")
-    normalized = normalized.removeprefix("www.")
-    return normalized.rstrip("/")
 
 
 def merge_profile(
