@@ -9,6 +9,36 @@ from fastapi.testclient import TestClient
 from outreach_agent.app import create_app
 
 
+def test_create_app_defers_default_provider_selection_until_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "unsupported")
+
+    create_app(artifact_dir=tmp_path)
+
+
+def test_create_app_uses_default_provider_config_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    client = TestClient(create_app(artifact_dir=tmp_path))
+    monkeypatch.setenv("LLM_PROVIDER", "unsupported")
+
+    response = client.post(
+        "/leads",
+        json={
+            "lead_name": "Morgan Lee",
+            "company_name": "NimbusForge AI",
+            "company_domain": "nimbusforge.ai",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "routed"
+
+
 def test_post_leads_routes_hot_fixture_with_fake_llm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

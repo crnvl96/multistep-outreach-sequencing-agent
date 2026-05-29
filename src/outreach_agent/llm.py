@@ -1,7 +1,13 @@
-import os
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from outreach_agent.fixtures import fixture_key_for_profile
+from outreach_agent.llm_config import LLMSettings, load_llm_settings
+from outreach_agent.llm_real import (
+    ChatCompletionRawLLMProvider,
+    OpenAIRawLLMProvider,
+    OpenRouterRawLLMProvider,
+)
 from outreach_agent.llm_validation import LLMProvider, ValidatingLLMProvider
 from outreach_agent.models import (
     GeneratedEmail,
@@ -13,6 +19,38 @@ from outreach_agent.models import (
 
 ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
+
+
+class LLMConfigurationError(ValueError):
+    pass
+
+
+OPENAI_DEFAULT_MODEL = "gpt-5.4-mini"
+OPENROUTER_DEFAULT_MODEL = "deepseek-v4-flash"
+
+
+@dataclass(frozen=True)
+class RealProviderSpec:
+    raw_provider: type[ChatCompletionRawLLMProvider]
+    api_key: Callable[[LLMSettings], str | None]
+    api_key_name: str
+    default_model: str
+
+
+REAL_PROVIDER_SPECS = {
+    "openai": RealProviderSpec(
+        raw_provider=OpenAIRawLLMProvider,
+        api_key=lambda settings: settings.openai_api_key,
+        api_key_name="OPENAI_API_KEY",
+        default_model=OPENAI_DEFAULT_MODEL,
+    ),
+    "openrouter": RealProviderSpec(
+        raw_provider=OpenRouterRawLLMProvider,
+        api_key=lambda settings: settings.openrouter_api_key,
+        api_key_name="OPENROUTER_API_KEY",
+        default_model=OPENROUTER_DEFAULT_MODEL,
+    ),
+}
 
 
 class FakeRawLLMProvider:
@@ -224,8 +262,26 @@ FAKE_EMAIL_BY_ROUTE: dict[Route, EmailBuilder] = {
 }
 
 
-def select_llm_provider() -> LLMProvider:
-    provider_name = os.getenv("LLM_PROVIDER", "fake").lower()
+def select_llm_provider(settings: LLMSettings | None = None) -> LLMProvider:
+    selected_settings = settings or load_llm_settings()
+    provider_name = selected_settings.provider.lower()
     if provider_name == "fake":
         return FakeLLMProvider()
-    raise ValueError(f"Unsupported LLM_PROVIDER for this slice: {provider_name}")
+
+    provider_spec = REAL_PROVIDER_SPECS.get(provider_name)
+    if not provider_spec:
+        raise ValueError(f"Unsupported LLM_PROVIDER for this slice: {provider_name}")
+
+    api_key = provider_spec.api_key(selected_settings)
+    if not api_key:
+        raise LLMConfigurationError(
+            f"{provider_spec.api_key_name} is required when "
+            f"LLM_PROVIDER={provider_name}"
+        )
+
+    return ValidatingLLMProvider(
+        provider_spec.raw_provider(
+            api_key=api_key,
+            model=selected_settings.model or provider_spec.default_model,
+        )
+    )
