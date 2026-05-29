@@ -1,8 +1,8 @@
 import os
 from collections.abc import Callable
-from typing import Protocol
 
 from outreach_agent.fixtures import fixture_key_for_profile
+from outreach_agent.llm_validation import LLMProvider, ValidatingLLMProvider
 from outreach_agent.models import (
     GeneratedEmail,
     IcpScore,
@@ -15,19 +15,7 @@ ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
 
 
-class LLMProvider(Protocol):
-    async def score_icp(self, profile: LeadProfile) -> IcpScore: ...
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> GeneratedEmail: ...
-
-
-class FakeLLMProvider:
+class FakeRawLLMProvider:
     async def score_icp(self, profile: LeadProfile) -> IcpScore:
         fixture_key = fixture_key_for_profile(profile)
         try:
@@ -37,6 +25,14 @@ class FakeLLMProvider:
                 f"No fake scoring fixture configured for {fixture_key}"
             ) from exc
         return build_score(profile)
+
+    async def repair_score_icp(
+        self,
+        profile: LeadProfile,
+        invalid_output: object,
+        repair_prompt: str,
+    ) -> IcpScore:
+        return await self.score_icp(profile)
 
     async def generate_first_email(
         self,
@@ -52,6 +48,27 @@ class FakeLLMProvider:
                 f"No fake email fixture configured for route: {final_route}"
             ) from exc
         return build_email(profile, scoring_result, final_route, sequence)
+
+    async def repair_first_email(
+        self,
+        profile: LeadProfile,
+        scoring_result: IcpScore,
+        final_route: Route,
+        sequence: SequencePlan,
+        invalid_output: object,
+        repair_prompt: str,
+    ) -> GeneratedEmail:
+        return await self.generate_first_email(
+            profile,
+            scoring_result,
+            final_route,
+            sequence,
+        )
+
+
+class FakeLLMProvider(ValidatingLLMProvider):
+    def __init__(self) -> None:
+        super().__init__(FakeRawLLMProvider())
 
 
 def build_hot_score(profile: LeadProfile) -> IcpScore:

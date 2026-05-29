@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -11,7 +12,7 @@ from outreach_agent.fixtures import (
     build_mock_enrichment_map,
     lookup_keys,
 )
-from outreach_agent.llm import LLMProvider
+from outreach_agent.llm_validation import LLMOutputInvalidError, LLMProvider
 from outreach_agent.models import (
     EnrichmentStep,
     GeneratedEmail,
@@ -19,8 +20,10 @@ from outreach_agent.models import (
     LeadIntake,
     LeadProfile,
     LeadRunResponse,
+    LLMRepairAttempt,
     PlannedTouch,
     Route,
+    RunError,
     RunTimings,
     SequencePlan,
     ThinDataCheck,
@@ -31,6 +34,20 @@ server_logger = logging.getLogger("uvicorn.error")
 
 EnrichmentSource = Literal["mock_api", "mock_scrape"]
 ThinDataStage = Literal["after_api_enrichment", "after_scrape_enrichment"]
+
+
+@dataclass(frozen=True)
+class LLMPhaseOutcome:
+    status: Literal["routed", "llm_output_invalid"]
+    llm_calls: list[str]
+    llm_repairs: list[LLMRepairAttempt]
+    scoring_result: IcpScore | None = None
+    final_route: Route | None = None
+    selected_sequence: SequencePlan | None = None
+    generated_email: GeneratedEmail | None = None
+    error: RunError | None = None
+
+
 RUNS_DIR = Path("runs")
 REQUIRED_PROFILE_FIELDS = (
     "lead_name",
@@ -164,25 +181,28 @@ async def process_lead(
     final_check = thin_data_checks[-1]
     missing_critical_fields = final_check.missing_required_fields
     llm_calls: list[str] = []
+    llm_repairs: list[LLMRepairAttempt] = []
     scoring_result: IcpScore | None = None
     final_route: Route | None = None
     selected_sequence: SequencePlan | None = None
     generated_email: GeneratedEmail | None = None
-    status: Literal["insufficient_data", "routed"] = "insufficient_data"
+    error: RunError | None = None
+    status: Literal[
+        "insufficient_data",
+        "routed",
+        "llm_output_invalid",
+    ] = "insufficient_data"
 
     if not final_check.is_thin:
-        scoring_result = await llm_provider.score_icp(profile)
-        llm_calls.append("score_icp")
-        final_route = route_from_score(scoring_result)
-        selected_sequence = select_sequence(final_route)
-        generated_email = await llm_provider.generate_first_email(
-            profile,
-            scoring_result,
-            final_route,
-            selected_sequence,
-        )
-        llm_calls.append("generate_first_email")
-        status = "routed"
+        llm_phase = await run_llm_phase(profile, llm_provider)
+        status = llm_phase.status
+        llm_calls = llm_phase.llm_calls
+        llm_repairs = llm_phase.llm_repairs
+        scoring_result = llm_phase.scoring_result
+        final_route = llm_phase.final_route
+        selected_sequence = llm_phase.selected_sequence
+        generated_email = llm_phase.generated_email
+        error = llm_phase.error
 
     completed_at = datetime.now(UTC)
     artifact_path = build_artifact_path(artifact_dir, started_at, run_id)
@@ -195,10 +215,12 @@ async def process_lead(
         thin_data_checks=thin_data_checks,
         missing_critical_fields=missing_critical_fields,
         llm_calls=llm_calls,
+        llm_repairs=llm_repairs,
         scoring_result=scoring_result,
         final_route=final_route,
         selected_sequence=selected_sequence,
         generated_email=generated_email,
+        error=error,
         timings=RunTimings(
             started_at=started_at.isoformat(),
             completed_at=completed_at.isoformat(),
@@ -209,6 +231,60 @@ async def process_lead(
     persist_run_artifact(response, artifact_path)
     log_run_summary(response)
     return response
+
+
+async def run_llm_phase(
+    profile: LeadProfile,
+    llm_provider: LLMProvider,
+) -> LLMPhaseOutcome:
+    llm_calls: list[str] = []
+    llm_repairs: list[LLMRepairAttempt] = []
+    scoring_result: IcpScore | None = None
+    final_route: Route | None = None
+    selected_sequence: SequencePlan | None = None
+
+    try:
+        score_call = await llm_provider.score_icp(profile)
+        llm_calls.extend(score_call.calls)
+        llm_repairs.extend(score_call.repairs)
+        scoring_result = score_call.value
+
+        final_route = route_from_score(scoring_result)
+        selected_sequence = select_sequence(final_route)
+
+        email_call = await llm_provider.generate_first_email(
+            profile,
+            scoring_result,
+            final_route,
+            selected_sequence,
+        )
+        llm_calls.extend(email_call.calls)
+        llm_repairs.extend(email_call.repairs)
+        return LLMPhaseOutcome(
+            status="routed",
+            llm_calls=llm_calls,
+            llm_repairs=llm_repairs,
+            scoring_result=scoring_result,
+            final_route=final_route,
+            selected_sequence=selected_sequence,
+            generated_email=email_call.value,
+        )
+    except LLMOutputInvalidError as exc:
+        llm_calls.extend(exc.calls)
+        llm_repairs.extend(exc.repairs)
+        return LLMPhaseOutcome(
+            status="llm_output_invalid",
+            llm_calls=llm_calls,
+            llm_repairs=llm_repairs,
+            scoring_result=scoring_result,
+            final_route=final_route,
+            selected_sequence=selected_sequence,
+            error=RunError(
+                code="llm_output_invalid",
+                failed_step=exc.call,
+                message=str(exc),
+            ),
+        )
 
 
 def route_from_score(scoring_result: IcpScore) -> Route:

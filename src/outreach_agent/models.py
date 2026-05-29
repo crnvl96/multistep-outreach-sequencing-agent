@@ -55,6 +55,8 @@ class ThinDataCheck(BaseModel):
 
 
 class IcpScore(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
     score: int = Field(ge=0, le=100)
     confidence: Confidence
     positive_evidence: list[str]
@@ -78,10 +80,24 @@ class SequencePlan(BaseModel):
 
 
 class GeneratedEmail(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
     subject: str
     body: str
     cta: str
     personalization_notes: list[str]
+
+
+class LLMRepairAttempt(BaseModel):
+    call: Literal["score_icp", "generate_first_email"]
+    attempt_number: int
+    status: Literal["repaired", "failed"]
+
+
+class RunError(BaseModel):
+    code: Literal["llm_output_invalid"]
+    failed_step: Literal["score_icp", "generate_first_email"]
+    message: str
 
 
 class RunTimings(BaseModel):
@@ -92,16 +108,18 @@ class RunTimings(BaseModel):
 
 class LeadRunResponse(BaseModel):
     run_id: str
-    status: Literal["insufficient_data", "routed"]
+    status: Literal["insufficient_data", "routed", "llm_output_invalid"]
     intake: LeadIntake
     profile: LeadProfile
     enrichment_steps: list[EnrichmentStep]
     thin_data_checks: list[ThinDataCheck]
     missing_critical_fields: list[str]
     llm_calls: list[str] = Field(default_factory=list)
+    llm_repairs: list[LLMRepairAttempt] = Field(default_factory=list)
     scoring_result: IcpScore | None = None
     final_route: Route | None = None
     selected_sequence: SequencePlan | None = None
     generated_email: GeneratedEmail | None = None
+    error: RunError | None = None
     timings: RunTimings
     artifact_path: str

@@ -2,7 +2,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from outreach_agent.llm import LLMProvider, select_llm_provider
+from outreach_agent.llm import select_llm_provider
+from outreach_agent.llm_validation import LLMProvider
 from outreach_agent.models import LeadIntake, LeadRunResponse
 from outreach_agent.workflow import RUNS_DIR, process_lead
 
