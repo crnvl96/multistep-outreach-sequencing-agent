@@ -91,6 +91,31 @@ def build_warm_score(profile: LeadProfile) -> IcpScore:
     )
 
 
+def build_cold_score(profile: LeadProfile) -> IcpScore:
+    return IcpScore(
+        score=32,
+        confidence="medium",
+        positive_evidence=[
+            "The profile is complete enough to judge fit.",
+            f"{profile.company_name} has a clear owner contact and region.",
+        ],
+        negative_evidence=[
+            "The company is a local catering business, not B2B SaaS or AI software.",
+            "There is no visible outbound sales team or GTM scaling motion.",
+            "Company size is below the target 50-500 employee ICP range.",
+        ],
+        missing_evidence=[
+            "No evidence of CRM, sales engagement, or RevOps tooling needs.",
+            "No funding, launch, hiring, or outbound growth urgency was found.",
+        ],
+        reasoning=(
+            "Weak ICP fit: the lead has enough data to score, but the business is "
+            "local-services oriented and lacks the software/GTM scaling signals "
+            "that define the target ICP."
+        ),
+    )
+
+
 def build_hot_email(
     profile: LeadProfile,
     scoring_result: IcpScore,
@@ -143,14 +168,42 @@ def build_warm_email(
     )
 
 
+def build_cold_email(
+    profile: LeadProfile,
+    scoring_result: IcpScore,
+    final_route: Route,
+    sequence: SequencePlan,
+) -> GeneratedEmail:
+    return GeneratedEmail(
+        subject="Checking whether outbound workflow is relevant",
+        body=(
+            f"Hi {profile.lead_name},\n\n"
+            f"I saw {profile.company_name} is focused on local catering and "
+            "event services, so this may not be a priority. We usually help "
+            "teams when outbound qualification or first-touch research starts "
+            "taking too much manual time.\n\n"
+            "If this is not a priority, no worries — I mainly wanted to check "
+            "whether improving outbound workflow is on your radar at all."
+        ),
+        cta="Is this worth exploring, or should I close the loop?",
+        personalization_notes=[
+            f"Used final deterministic route: {final_route}.",
+            f"Used {sequence.name} style: {sequence.style}.",
+            f"Kept the note low-pressure because the score was {scoring_result.score}.",
+        ],
+    )
+
+
 FAKE_SCORE_BY_FIXTURE: dict[str, ScoreBuilder] = {
     "hot": build_hot_score,
     "warm": build_warm_score,
+    "cold": build_cold_score,
 }
 
 FAKE_EMAIL_BY_ROUTE: dict[Route, EmailBuilder] = {
     "hot": build_hot_email,
     "warm": build_warm_email,
+    "cold": build_cold_email,
 }
 
 

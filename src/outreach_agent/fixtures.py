@@ -58,6 +58,25 @@ MOCK_LEAD_FIXTURES = (
         scrape_patch={},
     ),
     MockLeadFixture(
+        key="cold",
+        aliases=("greenfork-catering.example", "greenfork catering"),
+        api_patch={
+            "lead_title": "Owner",
+            "industry": "Local catering",
+            "company_size_range": "11-50 employees",
+            "region": "North America",
+            "company_description": (
+                "GreenFork Catering provides local event catering and meal service "
+                "for private gatherings."
+            ),
+            "business_signals": [
+                "Promotes seasonal menus for local events",
+                "No visible outbound sales team or SaaS revenue motion",
+            ],
+        },
+        scrape_patch={},
+    ),
+    MockLeadFixture(
         key="insufficient_data",
         aliases=("papertrail-cafe.example", "papertrail cafe"),
         api_patch={

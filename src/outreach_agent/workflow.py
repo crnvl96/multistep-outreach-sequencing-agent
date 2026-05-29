@@ -104,6 +104,34 @@ SEQUENCES_BY_ROUTE: dict[Route, SequencePlan] = {
             ),
         ],
     ),
+    "cold": SequencePlan(
+        route="cold",
+        name="Cold sequence",
+        style=(
+            "Light-touch, permission-based, low-pressure CTA focused on "
+            "confirming whether the topic matters."
+        ),
+        planned_touches=[
+            PlannedTouch(
+                touch_number=1,
+                timing="day 0",
+                channel="email",
+                goal="Ask permission to confirm whether GTM workflow pain is relevant.",
+            ),
+            PlannedTouch(
+                touch_number=2,
+                timing="day 7",
+                channel="email",
+                goal="Offer an easy opt-out if the topic is not relevant.",
+            ),
+            PlannedTouch(
+                touch_number=3,
+                timing="day 14",
+                channel="email",
+                goal="Close the loop with a low-pressure relevance check.",
+            ),
+        ],
+    ),
 }
 
 
@@ -145,10 +173,7 @@ async def process_lead(
     if not final_check.is_thin:
         scoring_result = await llm_provider.score_icp(profile)
         llm_calls.append("score_icp")
-        final_route = route_from_score(
-            scoring_result,
-            missing_critical_fields=missing_critical_fields,
-        )
+        final_route = route_from_score(scoring_result)
         selected_sequence = select_sequence(final_route)
         generated_email = await llm_provider.generate_first_email(
             profile,
@@ -186,12 +211,8 @@ async def process_lead(
     return response
 
 
-def route_from_score(
-    scoring_result: IcpScore,
-    *,
-    missing_critical_fields: list[str],
-) -> Route:
-    if scoring_result.score >= 80 and not missing_critical_fields:
+def route_from_score(scoring_result: IcpScore) -> Route:
+    if scoring_result.score >= 80:
         if scoring_result.confidence != "low":
             return "hot"
         return "warm"

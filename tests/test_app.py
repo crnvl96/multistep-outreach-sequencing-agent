@@ -135,6 +135,63 @@ def test_post_leads_routes_warm_fixture_after_scrape_fallback(
     assert json.loads(artifact_path.read_text(encoding="utf-8")) == data
 
 
+def test_post_leads_routes_cold_fixture_with_low_pressure_email(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    client = TestClient(create_app(artifact_dir=tmp_path))
+    payload = {
+        "lead_name": "Casey Morgan",
+        "company_name": "GreenFork Catering",
+        "company_domain": "greenfork-catering.example",
+    }
+
+    response = client.post("/leads", json=payload)
+
+    assert response.status_code == 200
+    data: dict[str, Any] = response.json()
+    assert data["status"] == "routed"
+    assert data["final_route"] == "cold"
+    assert data["llm_calls"] == ["score_icp", "generate_first_email"]
+    assert [step["source"] for step in data["enrichment_steps"]] == ["mock_api"]
+    assert data["thin_data_checks"] == [
+        {
+            "stage": "after_api_enrichment",
+            "is_thin": False,
+            "missing_required_fields": [],
+        }
+    ]
+    assert data["missing_critical_fields"] == []
+
+    scoring = data["scoring_result"]
+    assert scoring["score"] < 50
+    assert scoring["positive_evidence"]
+    assert scoring["negative_evidence"]
+    assert scoring["missing_evidence"]
+    assert "weak icp fit" in scoring["reasoning"].lower()
+    assert "route" not in scoring
+
+    sequence = data["selected_sequence"]
+    assert sequence["route"] == "cold"
+    assert sequence["name"] == "Cold sequence"
+    assert "light-touch" in sequence["style"].lower()
+    assert "permission-based" in sequence["style"].lower()
+    assert "low-pressure" in sequence["style"].lower()
+    assert sequence["planned_touches"]
+    assert all("timing" in touch for touch in sequence["planned_touches"])
+
+    email = data["generated_email"]
+    assert "checking" in email["subject"].lower()
+    assert "if this is not a priority" in email["body"].lower()
+    assert "worth exploring" in email["cta"].lower()
+    assert email["personalization_notes"]
+
+    artifact_path = Path(data["artifact_path"])
+    assert artifact_path.exists()
+    assert json.loads(artifact_path.read_text(encoding="utf-8")) == data
+
+
 def test_post_leads_returns_insufficient_data_decision_chain(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
