@@ -24,6 +24,25 @@ class LLMProvider(Protocol):
 
 class FakeLLMProvider:
     async def score_icp(self, profile: LeadProfile) -> IcpScore:
+        if is_warm_fixture(profile):
+            return IcpScore(
+                score=68,
+                confidence="medium",
+                positive_evidence=[
+                    f"{profile.company_name} matches the B2B SaaS ICP.",
+                    "Revenue workflow and RevOps signals suggest possible relevance.",
+                ],
+                negative_evidence=[],
+                missing_evidence=[
+                    "No strong hiring or funding urgency signal was found.",
+                ],
+                reasoning=(
+                    "Moderate ICP fit: the company is in the right market and has "
+                    "some GTM workflow relevance, but urgency is not strong enough "
+                    "for a Hot route."
+                ),
+            )
+
         return IcpScore(
             score=92,
             confidence="high",
@@ -47,6 +66,26 @@ class FakeLLMProvider:
         final_route: Route,
         sequence: SequencePlan,
     ) -> GeneratedEmail:
+        if final_route == "warm":
+            return GeneratedEmail(
+                subject="Worth comparing notes on outbound workflow fit?",
+                body=(
+                    f"Hi {profile.lead_name},\n\n"
+                    f"Noticed {profile.company_name} is sharing signals around RevOps "
+                    "process gaps and outbound workflow improvements. It may be useful "
+                    "to compare notes on where qualification and personalization slow "
+                    "the team down, especially before adding more manual research.\n\n"
+                    "If the topic is relevant, I can share a lightweight way teams map "
+                    "enrichment signals into first-touch prioritization."
+                ),
+                cta="Would it be worth a brief conversation next week?",
+                personalization_notes=[
+                    f"Used final deterministic route: {final_route}.",
+                    f"Used {sequence.name} style: {sequence.style}.",
+                    "Kept the CTA moderate because the score indicates possible fit.",
+                ],
+            )
+
         return GeneratedEmail(
             subject="Reducing manual outbound research at NimbusForge",
             body=(
@@ -68,6 +107,10 @@ class FakeLLMProvider:
                 ),
             ],
         )
+
+
+def is_warm_fixture(profile: LeadProfile) -> bool:
+    return (profile.company_domain or "").lower() == "signalspring.io"
 
 
 def select_llm_provider() -> LLMProvider:

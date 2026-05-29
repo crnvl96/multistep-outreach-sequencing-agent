@@ -42,6 +42,18 @@ REQUIRED_PROFILE_FIELDS = (
 )
 
 MOCK_API_ENRICHMENT: MockEnrichmentData = {
+    "signalspring.io": {
+        "lead_title": "Head of Growth",
+        "industry": "B2B SaaS",
+        "company_size_range": "51-200 employees",
+        "region": "Europe",
+    },
+    "signalspring software": {
+        "lead_title": "Head of Growth",
+        "industry": "B2B SaaS",
+        "company_size_range": "51-200 employees",
+        "region": "Europe",
+    },
     "nimbusforge.ai": {
         "lead_title": "VP Sales",
         "industry": "AI software",
@@ -83,6 +95,26 @@ MOCK_API_ENRICHMENT: MockEnrichmentData = {
 }
 
 MOCK_SCRAPE_ENRICHMENT: MockEnrichmentData = {
+    "signalspring.io": {
+        "company_description": (
+            "SignalSpring Software helps revenue teams monitor pipeline health "
+            "and prioritize account follow-up."
+        ),
+        "business_signals": [
+            "Publishing educational content about RevOps process gaps",
+            "Evaluating outbound workflow improvements",
+        ],
+    },
+    "signalspring software": {
+        "company_description": (
+            "SignalSpring Software helps revenue teams monitor pipeline health "
+            "and prioritize account follow-up."
+        ),
+        "business_signals": [
+            "Publishing educational content about RevOps process gaps",
+            "Evaluating outbound workflow improvements",
+        ],
+    },
     "papertrail-cafe.example": {
         "company_description": "A small neighborhood cafe with a simple brochure site.",
     },
@@ -116,6 +148,35 @@ HOT_SEQUENCE = SequencePlan(
             timing="day 5",
             channel="email",
             goal="Offer a concise proof point and direct next step.",
+        ),
+    ],
+)
+
+WARM_SEQUENCE = SequencePlan(
+    route="warm",
+    name="Warm sequence",
+    style=(
+        "Consultative, educational, moderate CTA focused on relevance and "
+        "potential fit."
+    ),
+    planned_touches=[
+        PlannedTouch(
+            touch_number=1,
+            timing="day 0",
+            channel="email",
+            goal="Share a relevant observation and invite a light conversation.",
+        ),
+        PlannedTouch(
+            touch_number=2,
+            timing="day 4",
+            channel="email",
+            goal="Offer a useful GTM workflow angle tied to the observed signals.",
+        ),
+        PlannedTouch(
+            touch_number=3,
+            timing="day 9",
+            channel="email",
+            goal="Ask whether improving outbound qualification is a priority.",
         ),
     ],
 )
@@ -217,6 +278,8 @@ def route_from_score(
 def select_sequence(route: Route) -> SequencePlan:
     if route == "hot":
         return HOT_SEQUENCE
+    if route == "warm":
+        return WARM_SEQUENCE
     raise ValueError(f"No sequence plan implemented for route: {route}")
 
 

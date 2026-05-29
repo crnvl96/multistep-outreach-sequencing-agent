@@ -67,6 +67,74 @@ def test_post_leads_routes_hot_fixture_with_fake_llm(
     assert json.loads(artifact_path.read_text(encoding="utf-8")) == data
 
 
+def test_post_leads_routes_warm_fixture_after_scrape_fallback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    client = TestClient(create_app(artifact_dir=tmp_path))
+    payload = {
+        "lead_name": "Jordan Park",
+        "company_name": "SignalSpring Software",
+        "company_domain": "signalspring.io",
+    }
+
+    response = client.post("/leads", json=payload)
+
+    assert response.status_code == 200
+    data: dict[str, Any] = response.json()
+    assert data["status"] == "routed"
+    assert data["final_route"] == "warm"
+    assert data["llm_calls"] == ["score_icp", "generate_first_email"]
+
+    assert [step["source"] for step in data["enrichment_steps"]] == [
+        "mock_api",
+        "mock_scrape",
+    ]
+    assert [check["stage"] for check in data["thin_data_checks"]] == [
+        "after_api_enrichment",
+        "after_scrape_enrichment",
+    ]
+    first_check = data["thin_data_checks"][0]
+    assert first_check["is_thin"] is True
+    assert first_check["missing_required_fields"] == [
+        "company_description",
+        "business_signals",
+    ]
+    second_check = data["thin_data_checks"][1]
+    assert second_check == {
+        "stage": "after_scrape_enrichment",
+        "is_thin": False,
+        "missing_required_fields": [],
+    }
+    assert data["missing_critical_fields"] == []
+    assert data["profile"]["company_description"]
+    assert data["profile"]["business_signals"]
+
+    scoring = data["scoring_result"]
+    assert scoring["score"] == 68
+    assert scoring["confidence"] == "medium"
+    assert scoring["positive_evidence"]
+    assert scoring["negative_evidence"] == []
+    assert scoring["missing_evidence"]
+
+    sequence = data["selected_sequence"]
+    assert sequence["route"] == "warm"
+    assert sequence["name"] == "Warm sequence"
+    assert sequence["planned_touches"]
+    assert all("timing" in touch for touch in sequence["planned_touches"])
+
+    email = data["generated_email"]
+    assert "worth comparing notes" in email["subject"].lower()
+    assert "useful" in email["body"].lower()
+    assert "worth a brief conversation" in email["cta"].lower()
+    assert email["personalization_notes"]
+
+    artifact_path = Path(data["artifact_path"])
+    assert artifact_path.exists()
+    assert json.loads(artifact_path.read_text(encoding="utf-8")) == data
+
+
 def test_post_leads_returns_insufficient_data_decision_chain(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
