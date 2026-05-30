@@ -63,6 +63,15 @@ If `LLM_PROVIDER` is `openai` or `openrouter`, the matching API key must be pres
 
 Every request writes a timestamped JSON decision-chain artifact under `runs/`. The API response includes the `artifact_path`, `run_id`, enrichment steps, thin-data checks, scoring result when present, final route, selected sequence, generated email when present, timings, and any workflow error.
 
+## Documentation
+
+Reviewer-facing docs live under `docs/`:
+
+- `docs/roadmap.md` explains the MVP goal, fictional ICP, target persona, and implemented paths.
+- `docs/system-behavior.md` explains intake, enrichment, routing, sequence behavior, validation, and run artifacts.
+- `docs/provider-and-prompts.md` explains fake/OpenAI/OpenRouter configuration and prompt behavior.
+- `docs/decisions.md` and `docs/tradeoffs.md` summarize major design choices and scope tradeoffs.
+
 ## Development checks
 
 ```bash

@@ -19,23 +19,23 @@ This slice should make the project understandable to a reviewer who has only the
 
 ## Acceptance criteria
 
-- [ ] Documentation under `docs/` explains the fictional ICP and target buyer/persona.
-- [ ] Documentation explains required vs optional/evidence lead profile fields.
-- [ ] Documentation explains API-first enrichment, scrape fallback, max-one-pass policy, and insufficient-data behavior.
-- [ ] Documentation explains deterministic routing thresholds and why the application owns routing instead of the LLM.
-- [ ] Documentation explains Hot, Warm, and Cold sequence plans, including first-email style differences.
-- [ ] Documentation explains that only the first email is generated in the MVP.
-- [ ] Documentation explains LLM provider configuration for fake, OpenAI, and OpenRouter.
-- [ ] Documentation explains strict JSON validation, one repair attempt, and `llm_output_invalid` behavior.
-- [ ] Documentation explains where decision-chain run artifacts are written and what they contain.
-- [ ] Documentation records key tradeoffs: mocked enrichment vs real LLM, sequential LLM calls vs parallelism, local-only/no auth, and narrow MVP scope.
-- [ ] Documentation links back to the design/spec artifact.
+- [x] Documentation under `docs/` explains the fictional ICP and target buyer/persona.
+- [x] Documentation explains required vs optional/evidence lead profile fields.
+- [x] Documentation explains API-first enrichment, scrape fallback, max-one-pass policy, and insufficient-data behavior.
+- [x] Documentation explains deterministic routing thresholds and why the application owns routing instead of the LLM.
+- [x] Documentation explains Hot, Warm, and Cold sequence plans, including first-email style differences.
+- [x] Documentation explains that only the first email is generated in the MVP.
+- [x] Documentation explains LLM provider configuration for fake, OpenAI, and OpenRouter.
+- [x] Documentation explains strict JSON validation, one repair attempt, and `llm_output_invalid` behavior.
+- [x] Documentation explains where decision-chain run artifacts are written and what they contain.
+- [x] Documentation records key tradeoffs: mocked enrichment vs real LLM, sequential LLM calls vs parallelism, local-only/no auth, and narrow MVP scope.
+- [x] Documentation links back to the design/spec artifact.
 
 ## Verification
 
-- [ ] Automated: run the project test command to ensure documentation changes did not break checks.
-- [ ] Manual: read the docs from the perspective of a reviewer and confirm the MVP behavior can be understood without Obsidian context.
-- [ ] Manual: confirm docs match the implemented behavior and fixture scripts.
+- [x] Automated: run the project test command to ensure documentation changes did not break checks.
+- [x] Manual: read the docs from the perspective of a reviewer and confirm the MVP behavior can be understood without Obsidian context.
+- [x] Manual: confirm docs match the implemented behavior and fixture scripts.
 
 ## Blocked by
 
