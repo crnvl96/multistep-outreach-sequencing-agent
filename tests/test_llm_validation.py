@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from outreach_agent.llm_validation import ValidatingLLMProvider
+from outreach_agent.llm.validation import ValidatingLLMProvider
 from outreach_agent.models import (
     IcpScore,
     LeadIntake,

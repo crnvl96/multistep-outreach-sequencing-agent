@@ -6,9 +6,9 @@ from typing import Any, cast
 import pytest
 
 from outreach_agent.llm import LLMConfigurationError, select_llm_provider
-from outreach_agent.llm_config import LLMSettings, load_llm_settings
-from outreach_agent.llm_real import OpenAIRawLLMProvider, OpenRouterRawLLMProvider
-from outreach_agent.llm_validation import ValidatingLLMProvider
+from outreach_agent.llm.config import LLMSettings, load_llm_settings
+from outreach_agent.llm.real import OpenAIRawLLMProvider, OpenRouterRawLLMProvider
+from outreach_agent.llm.validation import ValidatingLLMProvider
 from outreach_agent.models import IcpScore, LeadProfile
 from outreach_agent.workflow import select_sequence
 
@@ -99,6 +99,16 @@ def test_openrouter_provider_selection_uses_configured_model() -> None:
     assert provider.raw_provider.model == "openai/gpt-4.1-mini"
 
 
+def test_provider_selection_requires_configured_provider() -> None:
+    with pytest.raises(LLMConfigurationError, match="LLM_PROVIDER is required"):
+        select_llm_provider(LLMSettings())
+
+
+def test_fake_provider_cannot_be_selected_from_config() -> None:
+    with pytest.raises(LLMConfigurationError, match="not available through config"):
+        select_llm_provider(LLMSettings(provider="fake"))
+
+
 def test_openai_selection_without_api_key_fails_clearly() -> None:
     with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY"):
         select_llm_provider(LLMSettings(provider="openai"))
@@ -107,6 +117,15 @@ def test_openai_selection_without_api_key_fails_clearly() -> None:
 def test_openrouter_selection_without_api_key_fails_clearly() -> None:
     with pytest.raises(LLMConfigurationError, match="OPENROUTER_API_KEY"):
         select_llm_provider(LLMSettings(provider="openrouter"))
+
+
+def test_missing_provider_in_dotenv_has_no_fake_default(tmp_path: Path) -> None:
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
+
+    settings = load_llm_settings(dotenv_path=dotenv_path)
+
+    assert settings.provider is None
 
 
 def test_provider_selection_reads_dotenv_file(tmp_path: Path) -> None:
@@ -118,12 +137,7 @@ def test_provider_selection_reads_dotenv_file(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    provider = select_llm_provider(
-        load_llm_settings(
-            env={},
-            dotenv_path=dotenv_path,
-        )
-    )
+    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
 
     assert isinstance(provider, ValidatingLLMProvider)
     assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
@@ -131,7 +145,14 @@ def test_provider_selection_reads_dotenv_file(tmp_path: Path) -> None:
     assert provider.raw_provider.model == "gpt-5.4-mini"
 
 
-def test_provider_selection_prefers_environment_over_dotenv(tmp_path: Path) -> None:
+def test_provider_selection_uses_dotenv_without_environment_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openrouter")
+    monkeypatch.setenv("LLM_MODEL", "env-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
+
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text(
         "LLM_PROVIDER=openai\n"
@@ -140,21 +161,12 @@ def test_provider_selection_prefers_environment_over_dotenv(tmp_path: Path) -> N
         encoding="utf-8",
     )
 
-    provider = select_llm_provider(
-        load_llm_settings(
-            env={
-                "LLM_PROVIDER": "openai",
-                "LLM_MODEL": "env-model",
-                "OPENAI_API_KEY": "env-openai-key",
-            },
-            dotenv_path=dotenv_path,
-        )
-    )
+    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
 
     assert isinstance(provider, ValidatingLLMProvider)
     assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.api_key == "env-openai-key"
-    assert provider.raw_provider.model == "env-model"
+    assert provider.raw_provider.api_key == "dotenv-openai-key"
+    assert provider.raw_provider.model == "dotenv-model"
 
 
 def test_openai_provider_selection_uses_default_model() -> None:

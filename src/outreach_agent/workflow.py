@@ -12,7 +12,7 @@ from outreach_agent.fixtures import (
     build_mock_enrichment_map,
     lookup_keys,
 )
-from outreach_agent.llm_validation import LLMOutputInvalidError, LLMProvider
+from outreach_agent.llm.validation import LLMOutputInvalidError, LLMProvider
 from outreach_agent.models import (
     EnrichmentStep,
     GeneratedEmail,

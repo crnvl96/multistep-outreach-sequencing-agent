@@ -2,9 +2,18 @@
 
 Local FastAPI MVP for lead intake, deterministic enrichment, ICP scoring, Hot/Warm/Cold routing, first-email generation, and auditable run artifacts.
 
-## Quickstart with the fake provider
+## Quickstart
 
-The fake provider is the easiest local demo path. It does not require API keys or network calls to an LLM provider.
+Configure a real provider in `.env` first; the fake provider is test-only and cannot be selected for normal server startup.
+
+```bash
+# .env
+LLM_PROVIDER=openai
+LLM_MODEL=<openai-model-name>
+OPENAI_API_KEY=<your-openai-api-key>
+```
+
+Then run:
 
 ```bash
 ./scripts/run_server.sh
@@ -29,35 +38,41 @@ BASE_URL=http://127.0.0.1:8000 ./scripts/send_hot_fixture.sh
 
 ## Provider configuration
 
-Provider settings are read from environment variables or `.env`. Environment variables take precedence.
+Provider settings are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration.
 
-### Fake provider
-
-```bash
-LLM_PROVIDER=fake ./scripts/run_server.sh
-```
-
-This is the application default when `LLM_PROVIDER` is not set in the environment or `.env`.
+`LLM_PROVIDER` is required for normal app startup. If it is missing, startup fails instead of falling back to the fake test provider.
 
 ### OpenAI provider
 
 ```bash
-export LLM_PROVIDER=openai
-export LLM_MODEL=<openai-model-name>
-export OPENAI_API_KEY=<your-openai-api-key>
+# .env
+LLM_PROVIDER=openai
+LLM_MODEL=<openai-model-name>
+OPENAI_API_KEY=<your-openai-api-key>
+```
+
+Then run:
+
+```bash
 ./scripts/run_server.sh
 ```
 
 ### OpenRouter provider
 
 ```bash
-export LLM_PROVIDER=openrouter
-export LLM_MODEL=<openrouter-model-name>
-export OPENROUTER_API_KEY=<your-openrouter-api-key>
+# .env
+LLM_PROVIDER=openrouter
+LLM_MODEL=<openrouter-model-name>
+OPENROUTER_API_KEY=<your-openrouter-api-key>
+```
+
+Then run:
+
+```bash
 ./scripts/run_server.sh
 ```
 
-If `LLM_PROVIDER` is `openai` or `openrouter`, the matching API key must be present or the request fails with a clear configuration error.
+If `LLM_PROVIDER` is missing, unsupported, set to `fake`, or points to a real provider without the matching API key, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests.
 
 ## Run artifacts
 
@@ -69,7 +84,7 @@ Reviewer-facing docs live under `docs/`:
 
 - `docs/roadmap.md` explains the MVP goal, fictional ICP, target persona, and implemented paths.
 - `docs/system-behavior.md` explains intake, enrichment, routing, sequence behavior, validation, and run artifacts.
-- `docs/provider-and-prompts.md` explains fake/OpenAI/OpenRouter configuration and prompt behavior.
+- `docs/provider-and-prompts.md` explains OpenAI/OpenRouter configuration, test fake-provider usage, and prompt behavior.
 - `docs/decisions.md` and `docs/tradeoffs.md` summarize major design choices and scope tradeoffs.
 
 ## Development checks

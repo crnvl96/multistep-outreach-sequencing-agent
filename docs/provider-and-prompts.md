@@ -4,20 +4,20 @@ This document summarizes provider configuration and prompt responsibilities for 
 
 ## Provider configuration
 
-Provider selection is environment-driven:
+Provider selection is `.env`-driven:
 
 ```bash
-LLM_PROVIDER=openai|openrouter|fake
+LLM_PROVIDER=openai|openrouter
 LLM_MODEL=<model-name>
 OPENAI_API_KEY=<key>        # required for OpenAI
 OPENROUTER_API_KEY=<key>    # required for OpenRouter
 ```
 
-Environment variables may be supplied directly or through `.env`; real environment variables take precedence.
+These values are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration. `LLM_PROVIDER` is required; the app does not default to the fake provider.
 
 ## Fake provider
 
-`LLM_PROVIDER=fake` is the default no-credential mode for automated tests and local development. It returns deterministic scoring and email fixtures for the Hot, Warm, and Cold demo leads. It is not presented as real model behavior.
+The fake provider is only injected directly by automated tests. It is not selectable through `.env` and is not presented as real model behavior.
 
 ## OpenAI and OpenRouter providers
 
@@ -25,7 +25,7 @@ Environment variables may be supplied directly or through `.env`; real environme
 
 `LLM_PROVIDER=openrouter` selects the OpenRouter chat-completions provider and requires `OPENROUTER_API_KEY`.
 
-Both real providers use the same workflow contract as the fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
+Both real providers use the workflow contract covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
 
 ## Scoring prompt behavior
 

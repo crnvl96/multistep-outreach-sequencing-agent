@@ -14,7 +14,7 @@ Build a local-only Python FastAPI service with one primary lead intake endpoint.
 
 The system returns the full decision chain in the HTTP response, logs it server-side, and writes a timestamped JSON artifact for each run. Fixture shell scripts make it easy to exercise the Hot, Warm, Cold, and Insufficient Data paths with `curl`.
 
-The MVP uses real LLM behavior for scoring and email generation through a provider abstraction. OpenAI and OpenRouter are supported real providers. A clearly labeled fake provider is available only for automated tests and development without credentials.
+The MVP uses real LLM behavior for scoring and email generation through a provider abstraction. OpenAI and OpenRouter are supported real providers. A clearly labeled fake provider is available only inside automated tests.
 
 ## User Stories
 
@@ -80,9 +80,9 @@ The MVP uses real LLM behavior for scoring and email generation through a provid
 19. LLM scoring must be real for normal demos and must not be mocked in the main OpenAI/OpenRouter paths.
 20. The LLM integration must use dependency inversion through a provider interface.
 21. The MVP must include OpenAI and OpenRouter real provider implementations.
-22. The MVP must include a clearly labeled fake provider for automated tests and local development only.
+22. The MVP must include a clearly labeled fake provider for automated tests only.
 23. Provider selection and credentials must be configured through environment variables, expected as:
-    - `LLM_PROVIDER=openai|openrouter|fake`
+    - `LLM_PROVIDER=openai|openrouter`
     - `LLM_MODEL=<model-name>`
     - `OPENAI_API_KEY=<key>` for OpenAI
     - `OPENROUTER_API_KEY=<key>` for OpenRouter
@@ -146,7 +146,7 @@ The MVP uses real LLM behavior for scoring and email generation through a provid
 - [ ] Selecting `LLM_PROVIDER=openai` with a valid `OPENAI_API_KEY` can process a non-insufficient fixture and return validated scoring and email JSON.
 - [ ] Selecting `LLM_PROVIDER=openrouter` with a valid `OPENROUTER_API_KEY` can process a non-insufficient fixture and return validated scoring and email JSON.
 - [ ] Selecting a real provider without its required API key fails with a clear configuration error.
-- [ ] Automated tests can run with `LLM_PROVIDER=fake` and do not require network access or real API keys.
+- [ ] Automated tests can inject the fake provider directly and do not require network access or real API keys.
 - [ ] Tests verify the thin-data branching behavior, insufficient-data behavior, deterministic route thresholds, route-specific email prompt selection, and LLM validation/repair behavior.
 - [ ] Documentation under `docs/` explains the ICP, routing thresholds, enrichment policy, LLM provider configuration, decision-chain artifacts, and important tradeoffs.
 - [ ] README or docs include copy-pasteable commands for starting the server and running fixture curl scripts.
@@ -163,7 +163,7 @@ The MVP uses real LLM behavior for scoring and email generation through a provid
 - Use deterministic rule-based thin-data checks instead of LLM thin-data checks. This makes the agent's enrichment decision easier to test and explain.
 - Use real LLM calls for scoring and email generation. This is the core reasoning part of the task and should not be mocked in the main demo path.
 - Use dependency inversion for LLM providers so OpenAI and OpenRouter can share the same workflow contract.
-- Support a fake LLM provider only for automated tests and explicitly labeled local development.
+- Support a fake LLM provider only inside automated tests.
 - Use two sequential LLM calls: scoring first, email generation second. This trades latency for correctness because the selected route determines which email prompt should be used.
 - Make routing deterministic in application code from LLM score and confidence rather than asking the LLM to choose the route directly.
 - Generate only the first email, but define complete sequence plans so route choice has visible behavioral consequences.
@@ -179,7 +179,7 @@ Likely implementation areas:
 - Mock enrichment providers and fixture data.
 - Thin-data/completeness evaluator.
 - ICP definition and routing policy.
-- LLM provider abstraction plus OpenAI, OpenRouter, and fake providers.
+- LLM provider abstraction plus OpenAI/OpenRouter providers and a test-only fake provider.
 - Prompt builders for scoring and route-specific email generation.
 - Decision-chain/run artifact writer.
 - Tests and fixture scripts.
