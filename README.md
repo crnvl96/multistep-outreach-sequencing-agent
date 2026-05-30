@@ -1,0 +1,70 @@
+# Multistep Outreach Sequencing Agent
+
+Local FastAPI MVP for lead intake, deterministic enrichment, ICP scoring, Hot/Warm/Cold routing, first-email generation, and auditable run artifacts.
+
+## Quickstart with the fake provider
+
+The fake provider is the easiest local demo path. It does not require API keys or network calls to an LLM provider.
+
+```bash
+./scripts/run_server.sh
+```
+
+In another terminal, send the fixture requests:
+
+```bash
+./scripts/send_hot_fixture.sh
+./scripts/send_warm_fixture.sh
+./scripts/send_cold_fixture.sh
+./scripts/send_insufficient_fixture.sh
+```
+
+Each fixture sends a `curl` request to the local HTTP API at `POST /leads` and prints the JSON response.
+
+If your server is running on another host or port, set `BASE_URL`:
+
+```bash
+BASE_URL=http://127.0.0.1:8000 ./scripts/send_hot_fixture.sh
+```
+
+## Provider configuration
+
+Provider settings are read from environment variables or `.env`. Environment variables take precedence.
+
+### Fake provider
+
+```bash
+LLM_PROVIDER=fake ./scripts/run_server.sh
+```
+
+This is the application default when `LLM_PROVIDER` is not set in the environment or `.env`.
+
+### OpenAI provider
+
+```bash
+export LLM_PROVIDER=openai
+export LLM_MODEL=<openai-model-name>
+export OPENAI_API_KEY=<your-openai-api-key>
+./scripts/run_server.sh
+```
+
+### OpenRouter provider
+
+```bash
+export LLM_PROVIDER=openrouter
+export LLM_MODEL=<openrouter-model-name>
+export OPENROUTER_API_KEY=<your-openrouter-api-key>
+./scripts/run_server.sh
+```
+
+If `LLM_PROVIDER` is `openai` or `openrouter`, the matching API key must be present or the request fails with a clear configuration error.
+
+## Run artifacts
+
+Every request writes a timestamped JSON decision-chain artifact under `runs/`. The API response includes the `artifact_path`, `run_id`, enrichment steps, thin-data checks, scoring result when present, final route, selected sequence, generated email when present, timings, and any workflow error.
+
+## Development checks
+
+```bash
+uv run pytest
+```

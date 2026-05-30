@@ -22,22 +22,22 @@ This slice should make the existing implemented paths easy to demo, not add new 
 
 ## Acceptance criteria
 
-- [ ] A script starts the local server with sensible local defaults.
-- [ ] A Hot fixture script sends a predefined `curl` request and prints the response.
-- [ ] A Warm fixture script sends a predefined `curl` request and prints the response.
-- [ ] A Cold fixture script sends a predefined `curl` request and prints the response.
-- [ ] An Insufficient Data fixture script sends a predefined `curl` request and prints the response.
-- [ ] Scripts target the local HTTP endpoint and do not bypass the API.
-- [ ] Scripts are documented with copy-pasteable commands in README or a quickstart doc.
-- [ ] Docs explain the required environment variables for fake, OpenAI, and OpenRouter provider modes.
-- [ ] Docs explain where run artifacts are written.
+- [x] A script starts the local server with sensible local defaults.
+- [x] A Hot fixture script sends a predefined `curl` request and prints the response.
+- [x] A Warm fixture script sends a predefined `curl` request and prints the response.
+- [x] A Cold fixture script sends a predefined `curl` request and prints the response.
+- [x] An Insufficient Data fixture script sends a predefined `curl` request and prints the response.
+- [x] Scripts target the local HTTP endpoint and do not bypass the API.
+- [x] Scripts are documented with copy-pasteable commands in README or a quickstart doc.
+- [x] Docs explain the required environment variables for fake, OpenAI, and OpenRouter provider modes.
+- [x] Docs explain where run artifacts are written.
 
 ## Verification
 
-- [ ] Automated: run the project test command to ensure script/doc changes did not break existing behavior.
-- [ ] Manual: start the server with the start script.
-- [ ] Manual: run each fixture script and confirm it returns the expected route/result shape.
-- [ ] Manual: inspect README or quickstart and confirm a new reviewer has enough commands to run the MVP locally.
+- [x] Automated: run the project test command to ensure script/doc changes did not break existing behavior.
+- [x] Manual: start the server with the start script.
+- [x] Manual: run each fixture script and confirm it returns the expected route/result shape.
+- [x] Manual: inspect README or quickstart and confirm a new reviewer has enough commands to run the MVP locally.
 
 ## Blocked by
 
