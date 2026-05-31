@@ -124,12 +124,9 @@ def test_build_repair_prompt_includes_schema_fields_and_validation_error() -> No
         ValueError("Missing required field"),
     )
 
-    assert (
-        prompt
-        == (
-            "Return only valid JSON matching the scoring schema. "
-            "Required fields: score, summary. "
-            "Do not include markdown fences, prose, or commentary. "
-            "Validation error: Missing required field"
-        )
+    assert prompt == (
+        "Return only valid JSON matching the scoring schema. "
+        "Required fields: score, summary. "
+        "Do not include markdown fences, prose, or commentary. "
+        "Validation error: Missing required field"
     )
