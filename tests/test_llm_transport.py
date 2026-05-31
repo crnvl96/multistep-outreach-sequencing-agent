@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from outreach_agent.llm.transport import (
+from outreach_agent.integrations.llm.transport import (
     UrllibChatTransport,
     extract_chat_completion_content,
 )

@@ -4,7 +4,7 @@ from outreach_agent.domain.prompts import (
     build_repair_messages,
     build_scoring_messages,
 )
-from outreach_agent.llm.transport import UrllibChatTransport
+from outreach_agent.integrations.llm.transport import UrllibChatTransport
 from outreach_agent.protocols.llm import ChatTransport as _ChatTransport
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"

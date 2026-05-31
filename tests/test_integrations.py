@@ -1,5 +1,7 @@
 import importlib
 
+import pytest
+
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
 
 
@@ -19,3 +21,17 @@ def test_old_validation_provider_ownership_locations_removed() -> None:
         importlib.import_module("outreach_agent.llm"),
         "ValidatingLLMProvider",
     )
+
+
+@pytest.mark.parametrize(
+    "module_name",
+    [
+        "outreach_agent.llm.config",
+        "outreach_agent.llm.factory",
+        "outreach_agent.llm.real",
+        "outreach_agent.llm.transport",
+    ],
+)
+def test_old_real_llm_ownership_modules_removed(module_name: str) -> None:
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module(module_name)

@@ -1,14 +1,14 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.llm.config import LLMSettings
-from outreach_agent.llm.real import (
+from outreach_agent.integrations.llm.config import LLMSettings
+from outreach_agent.integrations.llm.providers import (
     ChatCompletionRawLLMProvider,
     OpenAIRawLLMProvider,
     OpenRouterRawLLMProvider,
 )
-from outreach_agent.protocols.llm import LLMProvider as _LLMProvider
+from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
+from outreach_agent.protocols import llm as _llm_protocols
 
 
 class LLMConfigurationError(ValueError):
@@ -39,7 +39,7 @@ REAL_PROVIDER_SPECS = {
 }
 
 
-def select_llm_provider(settings: LLMSettings) -> _LLMProvider:
+def select_llm_provider(settings: LLMSettings) -> _llm_protocols.LLMProvider:
     if settings.provider is None:
         raise LLMConfigurationError("LLM_PROVIDER is required")
 

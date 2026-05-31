@@ -3,8 +3,8 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from outreach_agent.domain.models import LeadIntake, LeadRunResponse
-from outreach_agent.llm import select_llm_provider
-from outreach_agent.llm.config import load_llm_settings
+from outreach_agent.integrations.llm.config import load_llm_settings
+from outreach_agent.integrations.llm.factory import select_llm_provider
 from outreach_agent.protocols.llm import LLMProvider
 from outreach_agent.workflow import RUNS_DIR, process_lead
 

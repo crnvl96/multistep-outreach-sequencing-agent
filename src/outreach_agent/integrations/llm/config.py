@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-DEFAULT_DOTENV_PATH = Path(__file__).resolve().parents[3] / ".env"
+DEFAULT_DOTENV_PATH = Path(__file__).resolve().parents[4] / ".env"
 
 
 @dataclass(frozen=True)

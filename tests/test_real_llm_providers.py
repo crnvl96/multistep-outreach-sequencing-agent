@@ -6,13 +6,20 @@ from typing import Any, cast
 import pytest
 
 from outreach_agent.domain.models import IcpScore, LeadProfile
-from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.llm import LLMConfigurationError, select_llm_provider
-from outreach_agent.llm.config import LLMSettings, load_llm_settings
-from outreach_agent.llm.real import (
+from outreach_agent.integrations.llm.config import (
+    DEFAULT_DOTENV_PATH,
+    LLMSettings,
+    load_llm_settings,
+)
+from outreach_agent.integrations.llm.factory import (
+    LLMConfigurationError,
+    select_llm_provider,
+)
+from outreach_agent.integrations.llm.providers import (
     OpenAIRawLLMProvider,
     OpenRouterRawLLMProvider,
 )
+from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
 from outreach_agent.workflow import select_sequence
 
 
@@ -105,6 +112,10 @@ def test_openrouter_provider_selection_uses_configured_model() -> None:
 def test_provider_selection_requires_configured_provider() -> None:
     with pytest.raises(LLMConfigurationError, match="LLM_PROVIDER is required"):
         select_llm_provider(LLMSettings())
+
+
+def test_default_dotenv_points_to_project_root() -> None:
+    assert DEFAULT_DOTENV_PATH == Path.cwd() / ".env"
 
 
 def test_fake_provider_cannot_be_selected_from_config() -> None:
