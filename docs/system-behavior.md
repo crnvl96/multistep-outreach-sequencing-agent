@@ -35,11 +35,12 @@ Optional/evidence fields from the spec include `tech_stack`, `funding_stage`, `h
 Enrichment is deterministic and fixture-backed so demos and tests are repeatable.
 
 1. Enrichment step `source` values are logical labels: `api` and `scrape`.
-2. Mocked external API enrichment always runs first.
-3. The application performs a thin-data check against required scoring fields.
-4. Mocked scraping runs only when the API result is still thin.
-5. Each source runs at most once per lead.
-6. A second thin-data check runs after scraping when scraping was needed.
+2. Enrichment is routed through two injectable provider contracts: `APIEnrichmentProvider` first, then `ScrapeEnrichmentProvider` only if needed.
+3. Mock implementations of both providers are explicit and fixture-backed in the integrations layer (`MockAPIEnrichmentProvider`, `MockScrapeEnrichmentProvider`).
+4. The application still performs a thin-data check against required scoring fields.
+5. Mocked scraping runs only when the API result is still thin.
+6. Each source runs at most once per lead.
+7. A second thin-data check runs after scraping when scraping was needed.
 
 If critical required fields are still missing after all allowed enrichment, the run returns `insufficient_data`. In that case the workflow does not call the LLM for scoring or email generation.
 
@@ -75,7 +76,7 @@ LLM scoring output must validate as strict JSON with:
 - `missing_evidence`
 - `reasoning`
 
-Email output must validate as strict JSON with:
+LLM email output must validate as strict JSON with:
 
 - `subject`
 - `body`
@@ -88,4 +89,4 @@ If either output is invalid, the validator makes exactly one repair attempt with
 
 Every request writes one timestamped JSON file under `runs/`. The API response includes the artifact path and mirrors the artifact content.
 
-Artifacts contain the decision chain: intake, enriched profile, enrichment steps, thin-data checks, missing critical fields, LLM calls and repair attempts, scoring result when present, final route, selected sequence, generated email when present, timing metadata, run id, and any workflow error.
+Artifacts contain the decision chain: intake, enriched profile, enrichment steps, thin-data checks, missing critical fields, LLM calls and repair attempts, scoring result when present, final route, selected sequence, generated email when present, timing metadata, and any workflow error.

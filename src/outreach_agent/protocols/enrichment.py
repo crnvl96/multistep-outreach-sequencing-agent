@@ -11,4 +11,12 @@ class APIEnrichmentProvider(Protocol):
         ...
 
 
-__all__ = ["APIEnrichmentProvider"]
+class ScrapeEnrichmentProvider(Protocol):
+    async def enrich(
+        self,
+        profile: LeadProfile,
+    ) -> tuple[LeadProfile, EnrichmentStep]:
+        ...
+
+
+__all__ = ["APIEnrichmentProvider", "ScrapeEnrichmentProvider"]

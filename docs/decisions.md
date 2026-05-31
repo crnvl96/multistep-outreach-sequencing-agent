@@ -12,7 +12,7 @@ The workflow is implemented directly in Python. The goal is to demonstrate the o
 
 ## Deterministic mocked enrichment
 
-External API enrichment and scraping are mocked with fixture data. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies.
+API enrichment and scraping are modeled as injectable providers, with concrete fixture-backed implementations `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` in the integrations layer. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies. Provider contracts live in `outreach_agent.protocols.enrichment` so future real providers can be added without changing workflow policy.
 
 ## Application-owned routing
 

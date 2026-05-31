@@ -1,6 +1,9 @@
 """Protocol contracts for application boundaries."""
 
-from outreach_agent.protocols.enrichment import APIEnrichmentProvider
+from outreach_agent.protocols.enrichment import (
+    APIEnrichmentProvider,
+    ScrapeEnrichmentProvider,
+)
 from outreach_agent.protocols.llm import (
     ChatTransport,
     LLMCall,
@@ -12,6 +15,7 @@ from outreach_agent.protocols.llm import (
 
 __all__ = [
     "APIEnrichmentProvider",
+    "ScrapeEnrichmentProvider",
     "ChatTransport",
     "LLMCall",
     "LLMCallResult",

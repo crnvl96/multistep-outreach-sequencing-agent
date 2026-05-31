@@ -11,10 +11,12 @@ The codebase uses a small, explicit layer split:
 - **Protocols (`src/outreach_agent/protocols/`)**
   - Dependency-inversion contracts and support types shared by callers and implementations.
   - Owns `LLMProvider`, `RawLLMProvider`, `ChatTransport`, `LLMOutputInvalidError`.
+  - Owns enrichment contracts for `APIEnrichmentProvider` and `ScrapeEnrichmentProvider`.
 
 - **Integrations (`src/outreach_agent/integrations/`)**
   - Concrete implementations and wiring for external services.
-  - Owns provider factory/config, raw chat-completion providers, HTTP transport, and validation decorator.
+  - Owns provider factory/config, raw chat-completion providers, HTTP transport, validation decorator, and mock enrichment providers.
+  - `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` are explicit fixture-backed placeholders for now.
 
 - **Application (`src/outreach_agent/` orchestrators)**
   - `app.py` creates the FastAPI app and selects concrete integrations.
@@ -29,6 +31,7 @@ For normal runtime startup:
 2. `select_llm_provider()` composes API-key checks, model defaults, and provider choice.
 3. The selected raw provider is wrapped with `ValidatingLLMProvider` for one-repair JSON
    validation on scoring and email generation.
+4. `create_app()` also wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` as the enrichment providers.
 
 Only the composition root (`app.py`) imports concrete integrations directly.
 
@@ -41,7 +44,8 @@ Prompt construction remains in the domain layer:
 - `outreach_agent.domain.prompts.build_repair_messages`
 
 Integrations call those builders and only transform between raw transport calls and
-contracted provider protocols; they do not own policy.
+contracted provider protocols; they do not own policy. Enrichment policy stays in
+workflow orchestration and chooses which provider to invoke and when.
 
 ## Architecture guard
 

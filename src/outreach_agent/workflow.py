@@ -22,8 +22,10 @@ from outreach_agent.domain.models import (
     SequencePlan,
     ThinDataCheck,
 )
-from outreach_agent.fixtures import apply_mock_enrichment, build_mock_enrichment_map
-from outreach_agent.protocols.enrichment import APIEnrichmentProvider
+from outreach_agent.protocols.enrichment import (
+    APIEnrichmentProvider,
+    ScrapeEnrichmentProvider,
+)
 from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -56,8 +58,6 @@ REQUIRED_PROFILE_FIELDS = (
     "company_description",
     "business_signals",
 )
-
-MOCK_SCRAPE_ENRICHMENT = build_mock_enrichment_map("scrape")
 
 SEQUENCES_BY_ROUTE: dict[Route, SequencePlan] = {
     "hot": SequencePlan(
@@ -152,6 +152,7 @@ async def process_lead(
     *,
     artifact_dir: Path = RUNS_DIR,
     api_enrichment_provider: APIEnrichmentProvider,
+    scrape_enrichment_provider: ScrapeEnrichmentProvider,
     llm_provider: LLMProvider,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
@@ -170,7 +171,7 @@ async def process_lead(
     thin_data_checks.append(first_check)
 
     if first_check.is_thin:
-        profile, scrape_step = run_mock_scrape_enrichment(profile)
+        profile, scrape_step = await scrape_enrichment_provider.enrich(profile)
         enrichment_steps.append(scrape_step)
         thin_data_checks.append(
             check_thin_data(profile, stage="after_scrape_enrichment")
@@ -313,11 +314,6 @@ def log_run_summary(response: LeadRunResponse) -> None:
     logger.info(message, *args)
     server_logger.info(message, *args)
 
-
-def run_mock_scrape_enrichment(
-    profile: LeadProfile,
-) -> tuple[LeadProfile, EnrichmentStep]:
-    return apply_mock_enrichment(profile, "scrape", MOCK_SCRAPE_ENRICHMENT)
 
 
 def check_thin_data(
