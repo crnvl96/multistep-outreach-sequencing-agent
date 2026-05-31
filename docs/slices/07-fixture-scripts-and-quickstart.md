@@ -10,7 +10,7 @@ AFK
 
 - 1. As a reviewer, I want to send a lead to a local HTTP endpoint with `curl`, so that I can evaluate the workflow without n8n or external orchestration tooling.
 - 2. As a reviewer, I want fixture scripts for representative leads, so that I can quickly test the Hot, Warm, Cold, and Insufficient Data paths.
-- 12. As a developer, I want provider configuration through environment variables, so that OpenAI can be configured without changing workflow code.
+- 12. As a developer, I want provider configuration through project `.env` settings, so that OpenAI can be configured without changing workflow code.
 
 Requirements covered: 41-42.
 
@@ -29,14 +29,14 @@ This slice should make the existing implemented paths easy to demo, not add new 
 - [x] An Insufficient Data fixture script sends a predefined `curl` request and prints the response.
 - [x] Scripts target the local HTTP endpoint and do not bypass the API.
 - [x] Scripts are documented with copy-pasteable commands in README or a quickstart doc.
-- [x] Docs explain the required environment variables for OpenAI and the test-only fake provider.
+- [x] Docs explain the required project `.env` settings for OpenAI and clarify that the fake provider is test-only.
 - [x] Docs explain where run artifacts are written.
 
 ## Verification
 
 - [x] Automated: run the project test command to ensure script/doc changes did not break existing behavior.
 - [x] Manual: start the server with the start script.
-- [x] Manual: run each fixture script and confirm it returns the expected route/result shape.
+- [x] Manual: run each fixture script and confirm it returns the expected response/artifact shape.
 - [x] Manual: inspect README or quickstart and confirm a new reviewer has enough commands to run the MVP locally.
 
 ## Blocked by
@@ -56,7 +56,7 @@ This slice should make the existing implemented paths easy to demo, not add new 
   - `scripts/send_cold_fixture.sh`
   - `scripts/send_insufficient_fixture.sh`
 - Keep scripts simple and transparent. Prefer readable `curl` commands over clever wrappers.
-- The fake provider should remain test-only; documentation should show the real OpenAI provider environment variables for local server startup.
+- The fake provider should remain test-only; documentation should show the real OpenAI provider `.env` settings for local server startup.
 - Do not add deployment or production hosting instructions in this slice.
 
 ## Review

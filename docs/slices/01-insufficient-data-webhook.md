@@ -50,7 +50,7 @@ None - can start immediately.
 
 - Keep the first slice narrow: do not implement Hot/Warm/Cold scoring or real LLM providers yet.
 - Use deterministic mocked enrichment keyed by normalized company name/domain.
-- The required scoring profile fields from the design are: `lead_name`, `company_name`, `company_domain`, `lead_title`, `industry`, `company_size_range`, `region`, `company_description`, and at least one `business_signal`.
+- The required scoring profile fields from the design are: `lead_name`, `company_name`, `company_domain`, `lead_title`, `industry`, `company_size_range`, `region`, `company_description`, and at least one `business_signals` entry.
 - A source should run at most once per lead.
 - The response/artifact schema can be refined later, but it should already contain the full decision chain needed for review.
 - Prefer simple, explicit Pydantic models and orchestration logic over broad abstractions.

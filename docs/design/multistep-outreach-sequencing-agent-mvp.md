@@ -4,7 +4,7 @@
 
 A reviewer/evaluator needs to see a complete, working outreach automation workflow that demonstrates agentic orchestration, API-style integration, LLM-driven scoring, route selection, personalized email generation, and auditable decision logging.
 
-The current project is only a minimal Python scaffold. The project brief asks for a lead webhook, enrichment, ICP scoring, Hot/Warm/Cold routing, personalized first email generation, and a full decision chain. Success means a reviewer can run a local service, send a lead with `curl`, and observe an end-to-end workflow that is simple, consistent, documented, and complete.
+The original project brief asked for a lead webhook, enrichment, ICP scoring, Hot/Warm/Cold routing, personalized first email generation, and a full decision chain. Success means a reviewer can run a local service, send a lead with `curl`, and observe an end-to-end workflow that is simple, consistent, documented, and complete.
 
 The MVP should prioritize one reliable vertical slice over breadth: receive one lead, enrich it through deterministic staged sources, decide whether more data is needed, score it with a real LLM, route it deterministically, generate the first route-specific email, and persist the full run artifact.
 
@@ -29,7 +29,7 @@ The MVP uses real LLM behavior for scoring and email generation through injected
 9. As a reviewer, I want only the first email drafted, so that the MVP stays focused while still demonstrating route-specific personalization.
 10. As a reviewer, I want the full decision chain in the API response and persisted locally, so that I can inspect why the system made each decision.
 11. As a developer, I want strict structured LLM output validation and one repair attempt, so that invalid model responses fail clearly instead of corrupting the workflow.
-12. As a developer, I want provider configuration through environment variables, so that OpenAI can be configured without changing workflow code.
+12. As a developer, I want provider configuration through project `.env` settings, so that OpenAI can be configured without changing workflow code.
 13. As a developer, I want automated tests with a fake LLM provider, so that orchestration logic can be verified without network calls, API keys, or LLM cost.
 
 ## Requirements
@@ -63,7 +63,7 @@ The MVP uses real LLM behavior for scoring and email generation through injected
     - `company_size_range`
     - `region`
     - `company_description`
-    - at least one `business_signal`
+    - at least one `business_signals` entry
 13. Optional/evidence profile fields may include:
     - `tech_stack`
     - `funding_stage`
@@ -73,7 +73,7 @@ The MVP uses real LLM behavior for scoring and email generation through injected
     - `pain_points`
     - `website_summary`
 14. If critical required fields are still missing after both enrichment sources have run, the workflow must return an `insufficient_data` result and must not call the LLM for scoring or email generation.
-15. If required fields are present but optional/evidence fields are weak, the workflow may proceed to LLM scoring with low data confidence, but the final route must not be Hot unless the evidence strongly justifies it under the documented routing policy.
+15. If required fields are present but optional/evidence fields are weak, the workflow may proceed to LLM scoring. The final route must not be Hot when the LLM reports low confidence.
 16. The ICP must be fictional, concrete, and documented in the project.
 17. The MVP ICP is: B2B SaaS or AI/software companies with 50–500 employees, selling to mid-market or enterprise customers, operating in North America or Europe, and actively scaling outbound sales or go-to-market operations. Strong positive signals include SDR/AE/RevOps hiring, recent funding or launch activity, CRM/sales engagement tooling, manual lead qualification pain, personalization bottlenecks, or fragmented enrichment workflows. Strong negative signals include local/B2C businesses, very small companies without a sales motion, non-software businesses, unclear company identity, or no credible outbound/GTM need.
 18. The target buyer/persona for personalization must be documented as VP Sales, Head of Growth, Head of RevOps, Founder/CEO, or another GTM owner at the target company.
@@ -81,7 +81,7 @@ The MVP uses real LLM behavior for scoring and email generation through injected
 20. The LLM integration must allow provider injection so tests can supply fakes without changing workflow code.
 21. The MVP must include an OpenAI real provider implementation.
 22. The MVP must include a clearly labeled fake provider for automated tests only.
-23. Provider selection and credentials must be configured through environment variables, expected as:
+23. Provider selection and credentials must be configured through the project `.env` file, expected as:
     - `LLM_PROVIDER=openai`
     - `LLM_MODEL=<model-name>`
     - `OPENAI_API_KEY=<key>` for OpenAI
@@ -97,10 +97,10 @@ The MVP uses real LLM behavior for scoring and email generation through injected
     - negative evidence
     - missing evidence
     - concise reasoning or summary
-28. The LLM must not own final route selection. The application must compute the final route from the LLM score, confidence, and data-confidence policy.
+28. The LLM must not own final route selection. The application must compute the final route from the LLM score and confidence after required-field checks pass.
 29. Routing thresholds must be documented and deterministic:
-    - Hot: score 80–100, no critical missing data, and confidence/data confidence not low.
-    - Warm: score 50–79, or score 80–100 with confidence/data-confidence concerns that prevent Hot.
+    - Hot: score 80–100, no critical missing data, and LLM confidence not low.
+    - Warm: score 50–79, or score 80–100 with low confidence.
     - Cold: score below 50 with enough data to make a judgment.
     - Insufficient Data: critical required fields missing after all allowed enrichment.
 30. The route-specific email generation LLM call must receive the final deterministic route and route instructions, and must not be allowed to change the route.
@@ -152,7 +152,7 @@ The MVP uses real LLM behavior for scoring and email generation through injected
 ## Decisions
 
 - Use a coded solution only. n8n is explicitly out of scope.
-- Use the existing Python project as the foundation. Repository evidence: `pyproject.toml` defines a Python project and `main.py` is currently a placeholder entry point.
+- Use the existing Python project as the foundation. Repository evidence: `pyproject.toml` defines a Python project and `src/outreach_agent/app.py` exposes the FastAPI app.
 - Use FastAPI and Pydantic for the local HTTP API and request/response validation.
 - Expose a real local HTTP webhook-style endpoint instead of only a CLI runner, because the brief explicitly starts with receiving a lead webhook.
 - Include fixture shell scripts for convenience, but keep the HTTP endpoint as the primary interface.
@@ -198,7 +198,7 @@ Likely implementation areas:
   - strict LLM output validation
   - one repair attempt for invalid LLM output
   - persisted run artifact creation
-- Manual verification should cover real provider behavior with OpenAI using environment variables and fixture curl scripts.
+- Manual verification should cover real provider behavior with OpenAI using project `.env` settings and fixture curl scripts.
 - Live LLM tests should not run by default because they are slower, non-deterministic, require credentials, and may incur cost.
 
 ## Out of Scope
@@ -230,9 +230,9 @@ Implementation may choose exact module/file names, exact fake fixture company na
   - Describes the target workflow: receive lead webhook, enrich via scrape/API, LLM-score against ICP, route to Hot/Warm/Cold sequence, generate personalized first email, and log full decision chain.
   - Emphasizes the twist: decide when enrichment is too thin and autonomously gather more data before scoring.
 - Repository scaffold:
-  - `pyproject.toml` currently defines the Python project.
-  - `main.py` currently contains only a placeholder hello-world entry point.
-  - `README.md` is currently empty.
+  - `pyproject.toml` defines the Python project and dependencies.
+  - `src/outreach_agent/app.py` contains the FastAPI app wiring.
+  - `README.md` contains the reviewer quickstart.
 - Discovery decisions from this session:
   - Code-only MVP, no n8n.
   - FastAPI/Pydantic local HTTP endpoint.

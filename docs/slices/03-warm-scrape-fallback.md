@@ -40,7 +40,7 @@ This slice demonstrates the core agentic fallback behavior from the brief: the s
 ## Verification
 
 - [ ] Automated: run the project test command and confirm tests cover scrape fallback only when thin, one scrape pass, successful post-scrape scoring, deterministic Warm routing, and Warm sequence/email selection.
-- [ ] Manual: run the server with the fake provider and send the Warm fixture via `curl`; confirm API then scrape, route `warm`, and one Warm-style email draft.
+- [ ] Automated/API-level: inject the fake provider and send the Warm fixture; confirm API then scrape, route `warm`, and one Warm-style email draft.
 - [ ] Manual: inspect the run artifact and confirm the first thin-data check explains why scraping was triggered.
 
 ## Blocked by
@@ -51,8 +51,8 @@ This slice demonstrates the core agentic fallback behavior from the brief: the s
 
 - Do not create repeated enrichment loops. The design allows one API pass and one scrape pass only.
 - Scraping is mocked/deterministic, not live web scraping.
-- If required fields are present but optional/evidence fields are weak, the workflow may proceed with low data confidence, but Hot should be prevented unless strongly justified under policy.
-- Warm routing threshold: score 50-79, or score 80-100 with confidence/data-confidence concerns that prevent Hot.
+- If required fields are present but evidence is weak, the workflow may proceed to scoring; Hot is prevented when LLM confidence is low.
+- Warm routing threshold: score 50-79, or score 80-100 with low confidence.
 - Warm sequence style: consultative, educational, moderate CTA, focused on relevance and potential fit.
 
 ## Review

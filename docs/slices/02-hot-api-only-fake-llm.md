@@ -25,7 +25,7 @@ This slice should establish the injected LLM provider methods used by the workfl
 
 ## Acceptance criteria
 
-- [ ] A fake LLM provider can be selected for tests/development without API keys or network access.
+- [ ] A fake LLM provider can be injected by tests without API keys or network access.
 - [ ] The Hot fixture's mocked API enrichment fills all required scoring profile fields.
 - [ ] The Hot fixture does not run mocked scraping.
 - [ ] The workflow makes a scoring call before an email-generation call.
@@ -38,7 +38,7 @@ This slice should establish the injected LLM provider methods used by the workfl
 ## Verification
 
 - [ ] Automated: run the project test command and confirm tests cover Hot API-only enrichment, no scrape call, scoring-before-email order, deterministic Hot routing, Hot sequence selection, and artifact contents.
-- [ ] Manual: run the server with the fake provider and send the Hot fixture via `curl`; confirm route `hot`, no scrape step, and one first-email draft.
+- [ ] Automated/API-level: inject the fake provider and send the Hot fixture; confirm route `hot`, no scrape step, and one first-email draft.
 - [ ] Manual: inspect the run artifact and confirm it contains the same scoring, route, sequence, and email information returned by the API.
 
 ## Blocked by
@@ -47,10 +47,10 @@ This slice should establish the injected LLM provider methods used by the workfl
 
 ## Implementation notes
 
-- The design says real LLM behavior is required for normal demos, but the fake provider is explicitly allowed for tests/dev. This slice should not implement the real OpenAI provider yet.
+- The design says real LLM behavior is required for normal demos, but the fake provider is explicitly allowed for automated tests. This slice should not implement the real OpenAI provider yet.
 - Keep the LLM provider method names provider-agnostic so real providers can be added later without changing orchestration.
 - LLM calls are sequential by design: scoring first, route-specific email generation second.
-- Hot routing threshold: score 80-100, no critical missing data, and confidence/data confidence not low.
+- Hot routing threshold: score 80-100, no critical missing data, and LLM confidence not low.
 - Hot sequence style: high-priority, concise, highly personalized, direct CTA, focused on urgent GTM or revenue workflow pain.
 - The email-generation step must receive the final deterministic route and must not be allowed to change it.
 

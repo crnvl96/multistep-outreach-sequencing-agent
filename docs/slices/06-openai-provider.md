@@ -9,13 +9,13 @@ HITL
 ## User stories covered
 
 - 6. As a reviewer, I want real LLM scoring against a documented ICP, so that the central reasoning step is not mocked.
-- 12. As a developer, I want provider configuration through environment variables, so that OpenAI can be configured without changing workflow code.
+- 12. As a developer, I want provider configuration through project `.env` settings, so that OpenAI can be configured without changing workflow code.
 
 Requirements covered: 19-24.
 
 ## What to build
 
-Implement the real OpenAI LLM provider as an object injected into the workflow. Provider selection, model selection, and credentials should come from environment variables. The real provider should support both sequential workflow calls: ICP scoring and route-specific first email generation.
+Implement the real OpenAI LLM provider as an object injected into the workflow. Provider selection, model selection, and credentials should come from the project `.env` file. The real provider should support both sequential workflow calls: ICP scoring and route-specific first email generation.
 
 This slice is HITL because full manual verification requires human-provided API keys and model choices.
 
@@ -33,7 +33,7 @@ This slice is HITL because full manual verification requires human-provided API 
 
 - [ ] Automated: run the project test command and confirm tests do not require real API keys or network.
 - [ ] Automated: run provider configuration tests that verify provider selection and missing-key errors without making live calls.
-- [ ] Manual HITL: set `LLM_PROVIDER=openai`, `LLM_MODEL`, and `OPENAI_API_KEY`; run a non-insufficient fixture and confirm validated scoring/email output.
+- [ ] Manual HITL: set `LLM_PROVIDER=openai`, `LLM_MODEL`, and `OPENAI_API_KEY` in the project `.env`; run a non-insufficient fixture and confirm validated scoring/email output.
 
 ## Blocked by
 
