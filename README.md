@@ -2,30 +2,77 @@
 
 Local FastAPI MVP for lead intake, deterministic enrichment, ICP scoring, Hot/Warm/Cold routing, first-email generation, and auditable run artifacts.
 
-## Quickstart
+## Local setup
 
-This demo only supports OpenAI for normal local runs. The OpenAI client and model are fixed in code: OpenAI with `gpt-5.4-mini`. They cannot be overridden from `.env` or exported shell environment variables.
+### Prerequisites
 
-Copy `.env.example` to `.env` and set the only required value:
+- Python 3.14 or newer. This project is configured with `.python-version` and `requires-python = ">=3.14"`.
+- [`uv`](https://docs.astral.sh/uv/) for Python and dependency management.
+- An OpenAI API key. Normal local runs use OpenAI with the fixed model `gpt-5.4-mini`.
+
+Install `uv` if you do not already have it:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then open a new terminal or reload your shell so the `uv` command is available.
+
+### 1. Get the code
+
+```bash
+git clone <repository-url>
+cd multistep-outreach-sequencing-agent
+```
+
+If you already have the repository, start from the project root directory.
+
+### 2. Install Python and dependencies
+
+```bash
+uv python install 3.14
+uv sync --dev
+```
+
+`uv sync --dev` creates the local virtual environment and installs runtime and development dependencies from `pyproject.toml` and `uv.lock`.
+
+### 3. Configure environment variables
+
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
-# edit .env and set OPENAI_API_KEY
 ```
 
-The `.env` file should contain:
+Edit `.env` so it contains:
 
 ```bash
 OPENAI_API_KEY=<your-openai-api-key>
 ```
 
-Then run:
+The `.env` file is required for normal local startup. Exported shell environment variables are intentionally ignored by this simplified local configuration.
+
+### 4. Start the API server
 
 ```bash
 ./scripts/run_server.sh
 ```
 
-In another terminal, send the fixture requests:
+By default the server starts at:
+
+```text
+http://127.0.0.1:8000
+```
+
+To use a different host or port:
+
+```bash
+HOST=0.0.0.0 PORT=8080 ./scripts/run_server.sh
+```
+
+### 5. Send sample requests
+
+In another terminal, run the fixture scripts:
 
 ```bash
 ./scripts/send_hot_fixture.sh
@@ -34,12 +81,12 @@ In another terminal, send the fixture requests:
 ./scripts/send_insufficient_fixture.sh
 ```
 
-Each fixture sends a `curl` request to the local HTTP API at `POST /leads` and prints the JSON response.
+Each fixture sends a `curl` request to `POST /leads` and prints the JSON response.
 
 If your server is running on another host or port, set `BASE_URL`:
 
 ```bash
-BASE_URL=http://127.0.0.1:8000 ./scripts/send_hot_fixture.sh
+BASE_URL=http://127.0.0.1:8080 ./scripts/send_hot_fixture.sh
 ```
 
 ## OpenAI configuration
@@ -72,6 +119,22 @@ Reviewer-facing docs live under `docs/`:
 
 ## Development checks
 
+Run the test suite:
+
 ```bash
 uv run pytest
 ```
+
+Run linting and formatting checks:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+```
+
+## Troubleshooting
+
+- `uv: command not found`: install `uv`, then reload your shell.
+- Python version errors: run `uv python install 3.14`, then `uv sync --dev` again.
+- Missing `.env` or `OPENAI_API_KEY`: confirm `.env` exists in the project root and contains `OPENAI_API_KEY=<your-openai-api-key>`.
+- Fixture scripts fail to connect: confirm `./scripts/run_server.sh` is still running and that `BASE_URL` matches the server URL.
