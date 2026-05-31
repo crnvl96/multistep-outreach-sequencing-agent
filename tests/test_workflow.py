@@ -63,9 +63,9 @@ class DeterministicLLMProvider:
         sequence: SequencePlan,
     ) -> LLMCallResult[GeneratedEmail]:
         email = GeneratedEmail(
-            subject="Test subject",
-            body="Test body",
-            cta="Test cta",
+            subject="Test \u2014 subject",
+            body="Morgan\u2019s test \u2014 body",
+            cta="Let\u2019s talk",
             personalization_notes=[
                 f"Route: {final_route}",
                 f"Company: {profile.company_name}",
@@ -231,6 +231,15 @@ def test_process_lead_skips_scrape_when_api_enrichment_is_complete(
     assert response.thin_data_checks[0].is_thin is False
     assert response.llm_calls == ["score_icp", "generate_first_email"]
     assert scrape_provider.calls == []
+    assert response.generated_email is not None
+    assert response.generated_email.subject == "Test - subject"
+    assert response.generated_email.body == "Morgan's test - body"
+    assert response.generated_email.cta == "Let's talk"
+
+    artifact_text = Path(response.artifact_path).read_text(encoding="utf-8")
+    assert artifact_text.isascii()
+    assert "\\u2014" not in artifact_text
+    assert "\\u2019" not in artifact_text
 
 
 def test_process_lead_stops_before_llm_when_scrape_still_thin(

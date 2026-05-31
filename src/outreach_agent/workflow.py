@@ -1,5 +1,6 @@
 import json
 import logging
+import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -53,6 +54,18 @@ REQUIRED_PROFILE_FIELDS = (
     "region",
     "company_description",
     "business_signals",
+)
+
+ASCII_REPLACEMENTS = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2026": "...",
+    }
 )
 
 SEQUENCES_BY_ROUTE: dict[Route, SequencePlan] = {
@@ -223,6 +236,9 @@ async def process_lead(
         ),
         artifact_path=str(artifact_path),
     )
+    response = LeadRunResponse.model_validate(
+        to_ascii_json_value(response.model_dump(mode="json"))
+    )
     persist_run_artifact(response, artifact_path)
     log_run_summary(response)
     return response
@@ -339,9 +355,30 @@ def build_artifact_path(artifact_dir: Path, started_at: datetime, run_id: str) -
     return artifact_dir / f"{timestamp}_{run_id}.json"
 
 
+def to_ascii_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.translate(ASCII_REPLACEMENTS))
+    return normalized.encode("ascii", errors="ignore").decode("ascii")
+
+
+def to_ascii_json_value(value: object) -> object:
+    if isinstance(value, str):
+        return to_ascii_text(value)
+    if isinstance(value, list):
+        return [to_ascii_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            to_ascii_text(key) if isinstance(key, str) else key: to_ascii_json_value(
+                item
+            )
+            for key, item in value.items()
+        }
+    return value
+
+
 def persist_run_artifact(response: LeadRunResponse, artifact_path: Path) -> None:
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_text(
-        json.dumps(response.model_dump(mode="json"), indent=2) + "\n",
+        json.dumps(response.model_dump(mode="json"), indent=2, ensure_ascii=False)
+        + "\n",
         encoding="utf-8",
     )

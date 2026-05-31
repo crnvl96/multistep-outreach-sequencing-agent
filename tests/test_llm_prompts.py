@@ -89,6 +89,7 @@ def test_build_email_messages_includes_route_sequence_scoring_and_schema() -> No
         "Do not invent facts beyond the lead profile and scoring context."
         in messages[0]["content"]
     )
+    assert "Use ASCII characters only" in messages[0]["content"]
     assert "Generate only the first email" in user_prompt
     assert "personalization_notes" in user_prompt
 

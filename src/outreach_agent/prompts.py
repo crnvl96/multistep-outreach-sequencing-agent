@@ -71,7 +71,8 @@ def build_email_messages(
                 "You write first-touch outbound emails for a GTM automation "
                 "product. Return only valid JSON. Do not include markdown fences, "
                 "prose, or commentary outside the JSON object. Do not invent facts "
-                "beyond the lead profile and scoring context."
+                "beyond the lead profile and scoring context. Use ASCII characters "
+                "only; use straight quotes and hyphens instead of smart punctuation."
             ),
         },
         {
