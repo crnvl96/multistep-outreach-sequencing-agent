@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from outreach_agent.domain.models import EnrichmentStep, LeadIntake
+from outreach_agent.models import EnrichmentStep, LeadIntake
 
 
 def test_lead_intake_accepts_domain() -> None:

@@ -1,6 +1,6 @@
 # System Behavior
 
-See the [design/spec artifact](designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md) for the full requirements behind this implementation.
+See the [design/spec artifact](design/multistep-outreach-sequencing-agent-mvp.md) for the full requirements behind this implementation.
 
 ## Lead intake
 
@@ -35,8 +35,8 @@ Optional/evidence fields from the spec include `tech_stack`, `funding_stage`, `h
 Enrichment is deterministic and fixture-backed so demos and tests are repeatable.
 
 1. Enrichment step `source` values are logical labels: `api` and `scrape`.
-2. Enrichment is routed through two injectable provider contracts: `APIEnrichmentProvider` first, then `ScrapeEnrichmentProvider` only if needed.
-3. Mock implementations of both providers are explicit and fixture-backed in the integrations layer (`MockAPIEnrichmentProvider`, `MockScrapeEnrichmentProvider`).
+2. Enrichment is routed through two injectable providers: `MockAPIEnrichmentProvider` first, then `MockScrapeEnrichmentProvider` only if needed.
+3. Mock implementations of both providers are explicit and fixture-backed in `outreach_agent.enrichment`.
 4. The application still performs a thin-data check against required scoring fields.
 5. Mocked scraping runs only when the API result is still thin.
 6. Each source runs at most once per lead.

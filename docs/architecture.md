@@ -1,60 +1,39 @@
 # Architecture Overview
 
-## Layered structure
+## Flat MVP structure
 
-The codebase uses a small, explicit layer split:
+The codebase keeps the reviewer-facing MVP intentionally small:
 
-- **Domain (`src/outreach_agent/domain/`)**
-  - Stable business models and prompt builders used across the system.
-  - Owns `LeadIntake`, `LeadProfile`, `IcpScore`, `LeadRunResponse`, and prompt composition helpers.
+- `src/outreach_agent/models.py` owns Pydantic request, response, scoring, route, email, and artifact models.
+- `src/outreach_agent/prompts.py` owns scoring, email, and repair prompt builders.
+- `src/outreach_agent/enrichment.py` owns deterministic fixture-backed API and scrape enrichment.
+- `src/outreach_agent/llm.py` owns provider configuration, OpenAI/OpenRouter chat completion clients, response validation, and one-repair retry behavior.
+- `src/outreach_agent/workflow.py` owns orchestration: enrichment, thin-data checks, scoring, deterministic route selection, email generation, and artifact persistence.
+- `src/outreach_agent/app.py` wires the FastAPI app and default providers.
 
-- **Protocols (`src/outreach_agent/protocols/`)**
-  - Dependency-inversion contracts and support types shared by callers and implementations.
-  - Owns `LLMProvider`, `RawLLMProvider`, `ChatTransport`, `LLMOutputInvalidError`.
-  - Owns enrichment contracts for `APIEnrichmentProvider` and `ScrapeEnrichmentProvider`.
-
-- **Integrations (`src/outreach_agent/integrations/`)**
-  - Concrete implementations and wiring for external services.
-  - Owns provider factory/config, raw chat-completion providers, HTTP transport, validation decorator, and mock enrichment providers.
-  - `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` are explicit fixture-backed placeholders for now.
-
-- **Application (`src/outreach_agent/` orchestrators)**
-  - `app.py` creates the FastAPI app and selects concrete integrations.
-  - `workflow.py` drives orchestration, routing, enrichment, persistence, and response composition.
+This replaces the previous domain/protocols/integrations layer split. The goal is to make the MVP easier to read and review rather than optimize for long-term library extension.
 
 ## Provider wiring
 
 For normal runtime startup:
 
-1. `create_app()` in `app.py` loads settings via
-   `outreach_agent.integrations.llm.config.load_llm_settings`.
-2. `select_llm_provider()` composes API-key checks, model defaults, and provider choice.
-3. The selected raw provider is wrapped with `ValidatingLLMProvider` for one-repair JSON
-   validation on scoring and email generation.
-4. `create_app()` also wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` as the enrichment providers.
+1. `create_app()` in `app.py` calls `load_llm_settings()` from `outreach_agent.llm`.
+2. `select_llm_provider()` validates provider settings and API-key requirements.
+3. The selected raw OpenAI/OpenRouter provider is wrapped with `ValidatingLLMProvider` for strict schema validation and one repair attempt.
+4. `create_app()` wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` from `outreach_agent.enrichment`.
 
-Only the composition root (`app.py`) imports concrete integrations directly.
+Tests can still inject fake LLM or enrichment providers directly because the workflow only needs objects with the expected async methods.
 
 ## Prompt ownership
 
-Prompt construction remains in the domain layer:
+Prompt construction lives in `outreach_agent.prompts`:
 
-- `outreach_agent.domain.prompts.build_scoring_messages`
-- `outreach_agent.domain.prompts.build_email_messages`
-- `outreach_agent.domain.prompts.build_repair_messages`
+- `build_scoring_messages`
+- `build_email_messages`
+- `build_repair_messages`
 
-Integrations call those builders and only transform between raw transport calls and
-contracted provider protocols; they do not own policy. Enrichment policy stays in
-workflow orchestration and chooses which provider to invoke and when.
+The LLM client calls these builders and handles transport plus schema validation. Workflow policy stays in `workflow.py`.
 
 ## Architecture guard
 
-`tests/test_architecture_guard.py` enforces import rules for `src/` modules:
-
-- Domain cannot depend on application/protocols/integrations.
-- Protocols can depend on domain and standard/library/contract dependencies only.
-- Workflow/application orchestration modules cannot import concrete integrations.
-- Only `outreach_agent.app` may import concrete integrations in application code.
-
-Tests are intentionally exempt so they can import concrete providers for integration-style
-coverage.
+`tests/test_architecture_guard.py` now checks that the package stays flat and that the removed `domain`, `protocols`, and `integrations` directories do not return.

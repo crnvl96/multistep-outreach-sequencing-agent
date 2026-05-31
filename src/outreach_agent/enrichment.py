@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from outreach_agent.domain.models import EnrichmentStep, LeadProfile
-from outreach_agent.protocols.enrichment import APIEnrichmentProviderProtocol
+from outreach_agent.models import EnrichmentStep, LeadProfile
 
 EnrichmentStage = Literal["api", "scrape"]
 MockPatch = dict[str, object]
@@ -169,7 +168,7 @@ def merge_profile(
 
 def apply_mock_enrichment(
     profile: LeadProfile,
-    source: Literal["api", "scrape"],
+    source: EnrichmentStage,
     enrichment_data: MockEnrichmentData,
 ) -> tuple[LeadProfile, EnrichmentStep]:
     patch = lookup_mock_data(profile, enrichment_data)
@@ -181,7 +180,7 @@ def apply_mock_enrichment(
     )
 
 
-class MockAPIEnrichmentProvider(APIEnrichmentProviderProtocol):
+class MockAPIEnrichmentProvider:
     def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
         self.enrichment_data = enrichment_data or build_mock_enrichment_map("api")
 
@@ -189,4 +188,9 @@ class MockAPIEnrichmentProvider(APIEnrichmentProviderProtocol):
         return apply_mock_enrichment(profile, "api", self.enrichment_data)
 
 
-__all__ = ["MockAPIEnrichmentProvider"]
+class MockScrapeEnrichmentProvider:
+    def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
+        self.enrichment_data = enrichment_data or build_mock_enrichment_map("scrape")
+
+    async def enrich(self, profile: LeadProfile) -> tuple[LeadProfile, EnrichmentStep]:
+        return apply_mock_enrichment(profile, "scrape", self.enrichment_data)

@@ -4,7 +4,8 @@ from typing import Literal
 
 import pytest
 
-from outreach_agent.domain.models import (
+from outreach_agent.llm import LLMCallResult, LLMProvider
+from outreach_agent.models import (
     Confidence,
     EnrichmentStep,
     GeneratedEmail,
@@ -14,17 +15,10 @@ from outreach_agent.domain.models import (
     Route,
     SequencePlan,
 )
-from outreach_agent.protocols.enrichment import (
-    APIEnrichmentProviderProtocol,
-    ScrapeEnrichmentProviderProtocol,
-)
-from outreach_agent.protocols.llm import LLMCallResult, LLMProviderProtocol
 from outreach_agent.workflow import process_lead, route_from_score
 
 
-class TrackingEnrichmentProvider(
-    APIEnrichmentProviderProtocol, ScrapeEnrichmentProviderProtocol
-):
+class TrackingEnrichmentProvider:
     def __init__(
         self,
         enriched_profile: LeadProfile,
@@ -46,7 +40,7 @@ class TrackingEnrichmentProvider(
         )
 
 
-class DeterministicLLMProvider(LLMProviderProtocol):
+class DeterministicLLMProvider(LLMProvider):
     async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
         score = IcpScore(
             score=72,

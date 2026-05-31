@@ -1,6 +1,6 @@
 # Tradeoffs
 
-The implementation follows the [design/spec artifact](designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md) and intentionally optimizes for a clear reviewer-facing MVP.
+The implementation follows the [design/spec artifact](design/multistep-outreach-sequencing-agent-mvp.md) and intentionally optimizes for a clear reviewer-facing MVP.
 
 ## Mocked enrichment vs. real LLM behavior
 

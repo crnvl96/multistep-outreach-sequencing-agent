@@ -5,22 +5,18 @@ from typing import Any, cast
 
 import pytest
 
-from outreach_agent.domain.models import IcpScore, LeadProfile
-from outreach_agent.integrations.llm.config import (
+from outreach_agent.llm import (
     DEFAULT_DOTENV_PATH,
-    LLMSettings,
-    load_llm_settings,
-)
-from outreach_agent.integrations.llm.factory import (
+    ChatTransport,
     LLMConfigurationError,
-    select_llm_provider,
-)
-from outreach_agent.integrations.llm.providers import (
+    LLMSettings,
     OpenAIRawLLMProvider,
     OpenRouterRawLLMProvider,
+    ValidatingLLMProvider,
+    load_llm_settings,
+    select_llm_provider,
 )
-from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.protocols.llm import ChatTransportProtocol
+from outreach_agent.models import IcpScore, LeadProfile
 from outreach_agent.workflow import select_sequence
 
 
@@ -58,7 +54,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class RecordingChatTransport(ChatTransportProtocol):
+class RecordingChatTransport(ChatTransport):
     def __init__(self, outputs: list[str]) -> None:
         self.outputs = outputs
         self.requests: list[dict[str, object]] = []

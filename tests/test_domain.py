@@ -2,11 +2,11 @@ import importlib
 
 import pytest
 
-from outreach_agent.domain.models import IcpScore, LeadProfile, Route
-from outreach_agent.domain.prompts import build_scoring_messages
+from outreach_agent.models import IcpScore, LeadProfile, Route
+from outreach_agent.prompts import build_scoring_messages
 
 
-def test_domain_prompts_reference_types_and_constants() -> None:
+def test_prompts_reference_models_and_constants() -> None:
     profile = LeadProfile(
         lead_name="Ada Lovelace",
         company_name="ThinCo",
@@ -21,7 +21,11 @@ def test_domain_prompts_reference_types_and_constants() -> None:
     assert "hot" in Route.__args__
 
 
-def test_legacy_domain_modules_no_longer_exist() -> None:
-    for module_name in ("outreach_agent.models", "outreach_agent.llm.prompts"):
+def test_legacy_layer_modules_no_longer_exist() -> None:
+    for module_name in (
+        "outreach_agent.domain",
+        "outreach_agent.protocols",
+        "outreach_agent.integrations",
+    ):
         with pytest.raises(ModuleNotFoundError):
             importlib.import_module(module_name)

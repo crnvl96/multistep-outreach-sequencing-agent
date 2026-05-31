@@ -2,8 +2,8 @@ import json
 
 from pydantic import BaseModel
 
-from outreach_agent.domain.models import IcpScore, LeadProfile
-from outreach_agent.domain.prompts import (
+from outreach_agent.models import IcpScore, LeadProfile
+from outreach_agent.prompts import (
     ICP_DEFINITION,
     build_email_messages,
     build_repair_messages,

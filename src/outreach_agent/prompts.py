@@ -2,7 +2,7 @@ import json
 
 from pydantic import BaseModel
 
-from outreach_agent.domain.models import (
+from outreach_agent.models import (
     GeneratedEmail,
     IcpScore,
     LeadProfile,

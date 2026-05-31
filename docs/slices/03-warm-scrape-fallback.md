@@ -1,6 +1,6 @@
 ## Parent
 
-`docs/designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md`
+`docs/design/multistep-outreach-sequencing-agent-mvp.md`
 
 ## Type
 

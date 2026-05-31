@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from outreach_agent.domain.models import LeadProfile
+from outreach_agent.models import LeadProfile
 from support.fake_llm import FakeLLMProvider
 
 

@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from outreach_agent.app import create_app
-from outreach_agent.integrations.llm.config import LLMSettings
+from outreach_agent.llm import LLMSettings
 from support.fake_llm import FakeLLMProvider
 
 

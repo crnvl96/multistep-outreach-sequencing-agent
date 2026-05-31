@@ -1,6 +1,6 @@
 # Key Decisions
 
-These decisions summarize the implemented MVP and link back to the [design/spec artifact](designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md).
+These decisions summarize the implemented MVP and link back to the [design/spec artifact](design/multistep-outreach-sequencing-agent-mvp.md).
 
 ## Local FastAPI service
 
@@ -12,7 +12,7 @@ The workflow is implemented directly in Python. The goal is to demonstrate the o
 
 ## Deterministic mocked enrichment
 
-API enrichment and scraping are modeled as injectable providers, with concrete fixture-backed implementations `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` in the integrations layer. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies. Provider contracts live in `outreach_agent.protocols.enrichment` so future real providers can be added without changing workflow policy.
+API enrichment and scraping are modeled as injectable providers, with concrete fixture-backed implementations `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` in `outreach_agent.enrichment`. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies.
 
 ## Application-owned routing
 

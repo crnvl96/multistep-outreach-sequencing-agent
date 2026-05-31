@@ -1,6 +1,6 @@
 # MVP Roadmap
 
-This repository implements the local-only MVP described in the [design/spec artifact](designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md).
+This repository implements the local-only MVP described in the [design/spec artifact](design/multistep-outreach-sequencing-agent-mvp.md).
 
 ## Goal
 

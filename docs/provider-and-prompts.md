@@ -1,15 +1,14 @@
 # LLM Providers and Prompt Behavior
 
-This document summarizes provider configuration and prompt responsibilities for the MVP. The full requirements live in the [design/spec artifact](designs/2026-05-29_11-42-29_multistep-outreach-sequencing-agent-mvp.md).
+This document summarizes provider configuration and prompt responsibilities for the MVP. The full requirements live in the [design/spec artifact](design/multistep-outreach-sequencing-agent-mvp.md).
 
-The implementation follows a stable architecture split:
+The implementation uses a flat module layout:
 
-- `domain`: schemas and prompt ownership.
-- `protocols`: provider and transport interfaces.
-- `integrations`: concrete provider implementations and provider/config/transport wiring.
-- `workflow`/`app`: orchestration and composition root.
-
-For full package-level ownership details, see [`architecture.md`](architecture.md).
+- `models.py`: schemas for intake, scoring, routing, email, errors, and artifacts.
+- `prompts.py`: scoring, email, and repair prompt builders.
+- `llm.py`: provider configuration, OpenAI/OpenRouter clients, transport, validation, and repair.
+- `enrichment.py`: deterministic fixture-backed enrichment providers.
+- `workflow.py` / `app.py`: orchestration and FastAPI wiring.
 
 ## Provider configuration
 
@@ -22,24 +21,21 @@ OPENAI_API_KEY=<key>        # required for OpenAI
 OPENROUTER_API_KEY=<key>    # required for OpenRouter
 ```
 
-These values are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration.
-`LLM_PROVIDER` is required; the app does not default to the fake provider.
+These values are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration. `LLM_PROVIDER` is required; the app does not default to the fake provider.
 
-Runtime provider wiring is owned by the composition root (`outreach_agent.app`) and proceeds through:
+Runtime provider wiring is owned by `outreach_agent.llm`:
 
-1. `load_llm_settings` (`outreach_agent.integrations.llm.config`)
-2. `select_llm_provider` (`outreach_agent.integrations.llm.factory`)
-3. `ValidatingLLMProvider` (`outreach_agent.integrations.llm_validation`) for strict schema validation and one-repair retry.  
+1. `load_llm_settings()` reads `.env`.
+2. `select_llm_provider()` checks provider/API-key settings and applies model defaults.
+3. `ValidatingLLMProvider` validates structured outputs and performs one repair attempt if needed.
 
 ## Prompt ownership
 
-Prompt construction is in the domain layer so policy remains stable and testable independent of transport details:
+Prompt construction lives in `outreach_agent.prompts` so policy remains easy to test independent of HTTP/provider details:
 
 - `build_scoring_messages`
 - `build_email_messages`
 - `build_repair_messages`
-
-All integration implementations call these builders and focus only on transport, provider details, and schema validation.
 
 ## Fake provider
 
@@ -83,4 +79,4 @@ The expected email JSON contains subject, body, CTA, and personalization notes.
 
 ## Repair behavior
 
-Both providers flow through the same strict validation wrapper. Invalid scoring or email output triggers one repair attempt. If repair fails, the workflow records `llm_output_invalid` and persists the partial decision chain.
+Invalid scoring or email output triggers one repair attempt. If repair fails, the workflow records `llm_output_invalid` and persists the partial decision chain.

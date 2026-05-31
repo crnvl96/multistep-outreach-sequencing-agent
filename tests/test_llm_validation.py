@@ -3,19 +3,18 @@ import json
 from pathlib import Path
 from typing import Any
 
-from outreach_agent.domain.models import (
+from outreach_agent.enrichment import (
+    MockAPIEnrichmentProvider,
+    MockScrapeEnrichmentProvider,
+)
+from outreach_agent.llm import RawLLMProvider, ValidatingLLMProvider
+from outreach_agent.models import (
     IcpScore,
     LeadIntake,
     LeadProfile,
     Route,
     SequencePlan,
 )
-from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.integrations.mock_api_enrichment import MockAPIEnrichmentProvider
-from outreach_agent.integrations.mock_scrape_enrichment import (
-    MockScrapeEnrichmentProvider,
-)
-from outreach_agent.protocols.llm import RawLLMProviderProtocol
 from outreach_agent.workflow import process_lead
 
 
@@ -47,7 +46,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class ScriptedRepairProvider(RawLLMProviderProtocol):
+class ScriptedRepairProvider(RawLLMProvider):
     def __init__(
         self,
         *,

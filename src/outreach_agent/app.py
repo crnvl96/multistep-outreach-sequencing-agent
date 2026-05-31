@@ -2,27 +2,21 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from outreach_agent.domain.models import LeadIntake, LeadRunResponse
-from outreach_agent.integrations.llm.config import load_llm_settings
-from outreach_agent.integrations.llm.factory import select_llm_provider
-from outreach_agent.integrations.mock_api_enrichment import MockAPIEnrichmentProvider
-from outreach_agent.integrations.mock_scrape_enrichment import (
+from outreach_agent.enrichment import (
+    MockAPIEnrichmentProvider,
     MockScrapeEnrichmentProvider,
 )
-from outreach_agent.protocols.enrichment import (
-    APIEnrichmentProviderProtocol,
-    ScrapeEnrichmentProviderProtocol,
-)
-from outreach_agent.protocols.llm import LLMProviderProtocol
-from outreach_agent.workflow import RUNS_DIR, process_lead
+from outreach_agent.llm import LLMProvider, load_llm_settings, select_llm_provider
+from outreach_agent.models import LeadIntake, LeadRunResponse
+from outreach_agent.workflow import RUNS_DIR, EnrichmentProvider, process_lead
 
 
 def create_app(
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: APIEnrichmentProviderProtocol | None = None,
-    scrape_enrichment_provider: ScrapeEnrichmentProviderProtocol | None = None,
-    llm_provider: LLMProviderProtocol | None = None,
+    api_enrichment_provider: EnrichmentProvider | None = None,
+    scrape_enrichment_provider: EnrichmentProvider | None = None,
+    llm_provider: LLMProvider | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Multistep Outreach Sequencing Agent")
 
