@@ -1,11 +1,9 @@
 import json
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
-from typing import Literal, Protocol
 
 from pydantic import BaseModel, ValidationError
 
-from outreach_agent.models import (
+from outreach_agent.domain.models import (
     GeneratedEmail,
     IcpScore,
     LeadProfile,
@@ -13,78 +11,17 @@ from outreach_agent.models import (
     Route,
     SequencePlan,
 )
-
-LLMCall = Literal["score_icp", "generate_first_email"]
-
-
-@dataclass(frozen=True)
-class LLMCallResult[StructuredOutput: BaseModel]:
-    value: StructuredOutput
-    calls: tuple[str, ...]
-    repairs: tuple[LLMRepairAttempt, ...] = ()
-
-
-class LLMOutputInvalidError(ValueError):
-    def __init__(
-        self,
-        call: LLMCall,
-        message: str,
-        *,
-        calls: tuple[str, ...],
-        repairs: tuple[LLMRepairAttempt, ...],
-    ) -> None:
-        self.call = call
-        self.calls = calls
-        self.repairs = repairs
-        super().__init__(message)
-
-
-class RawLLMProvider(Protocol):
-    async def score_icp(self, profile: LeadProfile) -> object: ...
-
-    async def repair_score_icp(
-        self,
-        profile: LeadProfile,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object: ...
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> object: ...
-
-    async def repair_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object: ...
-
-
-class LLMProvider(Protocol):
-    async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]: ...
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> LLMCallResult[GeneratedEmail]: ...
+from outreach_agent.protocols import llm as _llm_protocols
 
 
 class ValidatingLLMProvider:
-    def __init__(self, raw_provider: RawLLMProvider) -> None:
+    def __init__(self, raw_provider: _llm_protocols.RawLLMProvider) -> None:
         self.raw_provider = raw_provider
 
-    async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
+    async def score_icp(
+        self,
+        profile: LeadProfile,
+    ) -> _llm_protocols.LLMCallResult[IcpScore]:
         async def call_provider() -> object:
             return await self.raw_provider.score_icp(profile)
 
@@ -113,7 +50,7 @@ class ValidatingLLMProvider:
         scoring_result: IcpScore,
         final_route: Route,
         sequence: SequencePlan,
-    ) -> LLMCallResult[GeneratedEmail]:
+    ) -> _llm_protocols.LLMCallResult[GeneratedEmail]:
         async def call_provider() -> object:
             return await self.raw_provider.generate_first_email(
                 profile,
@@ -147,18 +84,18 @@ class ValidatingLLMProvider:
 
 async def call_with_one_repair[StructuredOutput: BaseModel](
     *,
-    call: LLMCall,
+    call: _llm_protocols.LLMCall,
     repair_call: str,
     schema: type[StructuredOutput],
     prompt_label: str,
     call_provider: Callable[[], Awaitable[object]],
     repair_provider: Callable[[object, str], Awaitable[object]],
-) -> LLMCallResult[StructuredOutput]:
+) -> _llm_protocols.LLMCallResult[StructuredOutput]:
     output = await call_provider()
     calls = (call,)
     try:
         value = parse_structured_output(output, schema, call)
-    except LLMOutputInvalidError as exc:
+    except _llm_protocols.LLMOutputInvalidError as exc:
         repair_output = await repair_provider(
             output,
             build_repair_prompt(schema, prompt_label, exc),
@@ -166,7 +103,7 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
         repaired_calls = (call, repair_call)
         try:
             value = parse_structured_output(repair_output, schema, call)
-        except LLMOutputInvalidError as repair_exc:
+        except _llm_protocols.LLMOutputInvalidError as repair_exc:
             repairs = (
                 LLMRepairAttempt(
                     call=call,
@@ -174,7 +111,7 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
                     status="failed",
                 ),
             )
-            raise LLMOutputInvalidError(
+            raise _llm_protocols.LLMOutputInvalidError(
                 call,
                 str(repair_exc),
                 calls=repaired_calls,
@@ -187,21 +124,25 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
                 status="repaired",
             ),
         )
-        return LLMCallResult(value=value, calls=repaired_calls, repairs=repairs)
-    return LLMCallResult(value=value, calls=calls)
+        return _llm_protocols.LLMCallResult(
+            value=value,
+            calls=repaired_calls,
+            repairs=repairs,
+        )
+    return _llm_protocols.LLMCallResult(value=value, calls=calls)
 
 
 def parse_structured_output[StructuredOutput: BaseModel](
     output: object,
     schema: type[StructuredOutput],
-    call: LLMCall,
+    call: _llm_protocols.LLMCall,
 ) -> StructuredOutput:
     try:
         parsed_output = json.loads(output) if isinstance(output, str) else output
         return schema.model_validate(parsed_output)
     except (json.JSONDecodeError, ValidationError) as exc:
         message = format_validation_error(exc)
-        raise LLMOutputInvalidError(
+        raise _llm_protocols.LLMOutputInvalidError(
             call,
             f"Invalid {call} output: {message}",
             calls=(call,),

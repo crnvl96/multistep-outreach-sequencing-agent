@@ -7,13 +7,7 @@ from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
-from outreach_agent.fixtures import (
-    MockEnrichmentData,
-    build_mock_enrichment_map,
-    lookup_keys,
-)
-from outreach_agent.llm.validation import LLMOutputInvalidError, LLMProvider
-from outreach_agent.models import (
+from outreach_agent.domain.models import (
     EnrichmentStep,
     GeneratedEmail,
     IcpScore,
@@ -28,6 +22,12 @@ from outreach_agent.models import (
     SequencePlan,
     ThinDataCheck,
 )
+from outreach_agent.fixtures import (
+    MockEnrichmentData,
+    build_mock_enrichment_map,
+    lookup_keys,
+)
+from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProvider
 
 logger = logging.getLogger(__name__)
 server_logger = logging.getLogger("uvicorn.error")

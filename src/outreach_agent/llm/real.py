@@ -1,10 +1,11 @@
-from outreach_agent.llm.prompts import (
+from outreach_agent.domain.models import IcpScore, LeadProfile, Route, SequencePlan
+from outreach_agent.domain.prompts import (
     build_email_messages,
     build_repair_messages,
     build_scoring_messages,
 )
-from outreach_agent.llm.transport import ChatTransport, UrllibChatTransport
-from outreach_agent.models import IcpScore, LeadProfile, Route, SequencePlan
+from outreach_agent.llm.transport import UrllibChatTransport
+from outreach_agent.protocols.llm import ChatTransport as _ChatTransport
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -18,7 +19,7 @@ class ChatCompletionRawLLMProvider:
         *,
         api_key: str,
         model: str,
-        transport: ChatTransport | None = None,
+        transport: _ChatTransport | None = None,
     ) -> None:
         self.api_key = api_key
         self.model = model

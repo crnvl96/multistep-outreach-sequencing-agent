@@ -5,11 +5,11 @@ from typing import Any, cast
 
 import pytest
 
+from outreach_agent.domain.models import IcpScore, LeadProfile
 from outreach_agent.llm import LLMConfigurationError, select_llm_provider
 from outreach_agent.llm.config import LLMSettings, load_llm_settings
 from outreach_agent.llm.real import OpenAIRawLLMProvider, OpenRouterRawLLMProvider
 from outreach_agent.llm.validation import ValidatingLLMProvider
-from outreach_agent.models import IcpScore, LeadProfile
 from outreach_agent.workflow import select_sequence
 
 

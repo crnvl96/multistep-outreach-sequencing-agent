@@ -3,14 +3,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from outreach_agent.llm.validation import ValidatingLLMProvider
-from outreach_agent.models import (
+from outreach_agent.domain.models import (
     IcpScore,
     LeadIntake,
     LeadProfile,
     Route,
     SequencePlan,
 )
+from outreach_agent.llm.validation import ValidatingLLMProvider
 from outreach_agent.workflow import process_lead
 
 

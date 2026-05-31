@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from outreach_agent.models import LeadProfile
+from outreach_agent.domain.models import LeadProfile
 
 EnrichmentStage = Literal["api", "scrape"]
 MockPatch = dict[str, object]

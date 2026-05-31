@@ -1,12 +1,12 @@
 import json
 
-from outreach_agent.llm.prompts import (
+from outreach_agent.domain.models import IcpScore, LeadProfile
+from outreach_agent.domain.prompts import (
     ICP_DEFINITION,
     build_email_messages,
     build_repair_messages,
     build_scoring_messages,
 )
-from outreach_agent.models import IcpScore, LeadProfile
 from outreach_agent.workflow import select_sequence
 
 

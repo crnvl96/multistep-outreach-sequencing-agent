@@ -1,6 +1,6 @@
 import pytest
 
-from outreach_agent.models import Confidence, IcpScore, Route
+from outreach_agent.domain.models import Confidence, IcpScore, Route
 from outreach_agent.workflow import route_from_score
 
 

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from outreach_agent.models import LeadIntake
+from outreach_agent.domain.models import LeadIntake
 
 
 def test_lead_intake_accepts_domain() -> None:

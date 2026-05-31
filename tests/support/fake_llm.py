@@ -1,14 +1,14 @@
 from collections.abc import Callable
 
-from outreach_agent.fixtures import fixture_key_for_profile
-from outreach_agent.llm.validation import ValidatingLLMProvider
-from outreach_agent.models import (
+from outreach_agent.domain.models import (
     GeneratedEmail,
     IcpScore,
     LeadProfile,
     Route,
     SequencePlan,
 )
+from outreach_agent.fixtures import fixture_key_for_profile
+from outreach_agent.llm.validation import ValidatingLLMProvider
 
 ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]

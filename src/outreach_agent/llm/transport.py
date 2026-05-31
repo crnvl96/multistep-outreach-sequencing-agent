@@ -2,7 +2,6 @@ import asyncio
 import json
 import urllib.error
 import urllib.request
-from typing import Protocol
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -17,17 +16,6 @@ class ChatCompletionChoice(BaseModel):
 
 class ChatCompletionResponse(BaseModel):
     choices: list[ChatCompletionChoice] = Field(min_length=1)
-
-
-class ChatTransport(Protocol):
-    async def create_chat_completion(
-        self,
-        *,
-        endpoint_url: str,
-        api_key: str,
-        model: str,
-        messages: list[dict[str, str]],
-    ) -> str: ...
 
 
 class UrllibChatTransport:
@@ -100,7 +88,6 @@ __all__ = [
     "ChatCompletionMessage",
     "ChatCompletionChoice",
     "ChatCompletionResponse",
-    "ChatTransport",
     "UrllibChatTransport",
     "extract_chat_completion_content",
 ]

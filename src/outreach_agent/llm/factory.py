@@ -7,7 +7,8 @@ from outreach_agent.llm.real import (
     OpenAIRawLLMProvider,
     OpenRouterRawLLMProvider,
 )
-from outreach_agent.llm.validation import LLMProvider, ValidatingLLMProvider
+from outreach_agent.llm.validation import ValidatingLLMProvider
+from outreach_agent.protocols.llm import LLMProvider as _LLMProvider
 
 
 class LLMConfigurationError(ValueError):
@@ -38,7 +39,7 @@ REAL_PROVIDER_SPECS = {
 }
 
 
-def select_llm_provider(settings: LLMSettings) -> LLMProvider:
+def select_llm_provider(settings: LLMSettings) -> _LLMProvider:
     if settings.provider is None:
         raise LLMConfigurationError("LLM_PROVIDER is required")
 

@@ -1,6 +1,6 @@
 import json
 
-from outreach_agent.models import (
+from outreach_agent.domain.models import (
     GeneratedEmail,
     IcpScore,
     LeadProfile,
@@ -81,8 +81,8 @@ def build_email_messages(
                 f"Selected sequence plan:\n{sequence_json}\n\n"
                 f"Lead profile:\n{profile_json}\n\n"
                 f"Scoring context:\n{score_json}\n\n"
-                "Generate only the first email. Return strict structured JSON "
-                "matching this schema:\n"
+                "Generate only the first email. Return strict structured JSON matching "
+                "this schema:\n"
                 f"{email_schema_json}"
             ),
         },
