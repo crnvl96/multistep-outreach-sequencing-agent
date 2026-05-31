@@ -161,9 +161,11 @@ async def process_lead(
     started_at = datetime.now(UTC)
     started_timer = perf_counter()
     run_id = uuid4().hex
-    profile = profile_from_intake(intake)
+
     enrichment_steps: list[EnrichmentStep] = []
     thin_data_checks: list[ThinDataCheck] = []
+
+    profile = LeadProfile(**intake.model_dump())
 
     profile, api_step = run_mock_api_enrichment(profile)
     enrichment_steps.append(api_step)
@@ -314,10 +316,6 @@ def log_run_summary(response: LeadRunResponse) -> None:
     )
     logger.info(message, *args)
     server_logger.info(message, *args)
-
-
-def profile_from_intake(intake: LeadIntake) -> LeadProfile:
-    return LeadProfile(**intake.model_dump())
 
 
 def run_mock_api_enrichment(profile: LeadProfile) -> tuple[LeadProfile, EnrichmentStep]:
