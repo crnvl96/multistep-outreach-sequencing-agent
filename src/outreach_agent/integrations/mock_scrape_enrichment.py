@@ -4,9 +4,10 @@ from outreach_agent.fixtures import (
     apply_mock_enrichment,
     build_mock_enrichment_map,
 )
+from outreach_agent.protocols.enrichment import ScrapeEnrichmentProvider
 
 
-class MockScrapeEnrichmentProvider:
+class MockScrapeEnrichmentProvider(ScrapeEnrichmentProvider):
     def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
         self.enrichment_data = enrichment_data or build_mock_enrichment_map("scrape")
 

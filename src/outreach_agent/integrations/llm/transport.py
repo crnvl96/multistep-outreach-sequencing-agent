@@ -5,6 +5,8 @@ import urllib.request
 
 from pydantic import BaseModel, Field, ValidationError
 
+from outreach_agent.protocols.llm import ChatTransport
+
 
 class ChatCompletionMessage(BaseModel):
     content: str = Field(min_length=1)
@@ -18,7 +20,7 @@ class ChatCompletionResponse(BaseModel):
     choices: list[ChatCompletionChoice] = Field(min_length=1)
 
 
-class UrllibChatTransport:
+class UrllibChatTransport(ChatTransport):
     async def create_chat_completion(
         self,
         *,

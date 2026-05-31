@@ -14,11 +14,15 @@ from outreach_agent.domain.models import (
     Route,
     SequencePlan,
 )
-from outreach_agent.protocols.llm import LLMCallResult
+from outreach_agent.protocols.enrichment import (
+    APIEnrichmentProvider,
+    ScrapeEnrichmentProvider,
+)
+from outreach_agent.protocols.llm import LLMCallResult, LLMProvider
 from outreach_agent.workflow import process_lead, route_from_score
 
 
-class TrackingEnrichmentProvider:
+class TrackingEnrichmentProvider(APIEnrichmentProvider, ScrapeEnrichmentProvider):
     def __init__(
         self,
         enriched_profile: LeadProfile,
@@ -40,7 +44,7 @@ class TrackingEnrichmentProvider:
         )
 
 
-class DeterministicLLMProvider:
+class DeterministicLLMProvider(LLMProvider):
     async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
         score = IcpScore(
             score=72,

@@ -9,12 +9,13 @@ from outreach_agent.domain.models import (
 )
 from outreach_agent.fixtures import fixture_key_for_profile
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
+from outreach_agent.protocols.llm import RawLLMProvider
 
 ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
 
 
-class FakeRawLLMProvider:
+class FakeRawLLMProvider(RawLLMProvider):
     async def score_icp(self, profile: LeadProfile) -> IcpScore:
         fixture_key = fixture_key_for_profile(profile)
         try:
