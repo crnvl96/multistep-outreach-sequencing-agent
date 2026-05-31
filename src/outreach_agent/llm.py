@@ -55,8 +55,6 @@ class LLMOutputInvalidError(ValueError):
 
 @dataclass(frozen=True)
 class LLMSettings:
-    provider: str | None = None
-    model: str | None = None
     openai_api_key: str | None = None
 
 
@@ -80,37 +78,17 @@ def load_llm_settings(
 ) -> LLMSettings:
     dotenv_env = read_dotenv(dotenv_path)
 
-    return LLMSettings(
-        provider=dotenv_env.get("LLM_PROVIDER"),
-        model=dotenv_env.get("LLM_MODEL"),
-        openai_api_key=dotenv_env.get("OPENAI_API_KEY"),
-    )
+    return LLMSettings(openai_api_key=dotenv_env.get("OPENAI_API_KEY"))
 
 
 def select_llm_provider(settings: LLMSettings) -> ValidatingLLMProvider:
-    if settings.provider is None:
-        raise LLMConfigurationError("LLM_PROVIDER is required")
-
-    provider_name = settings.provider.lower()
-
-    if provider_name == "fake":
-        raise LLMConfigurationError(
-            "The fake LLM provider is not available through config; "
-            "inject a test provider directly in tests instead"
-        )
-
-    if provider_name != "openai":
-        raise ValueError(f"Unsupported LLM_PROVIDER: {provider_name}")
-
     if not settings.openai_api_key:
-        raise LLMConfigurationError(
-            "OPENAI_API_KEY is required when LLM_PROVIDER=openai"
-        )
+        raise LLMConfigurationError("OPENAI_API_KEY is required")
 
     return ValidatingLLMProvider(
         OpenAIRawLLMProvider(
             api_key=settings.openai_api_key,
-            model=settings.model or DEFAULT_OPENAI_MODEL,
+            model=DEFAULT_OPENAI_MODEL,
         )
     )
 

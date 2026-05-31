@@ -11,16 +11,16 @@ from outreach_agent.llm import LLMSettings
 from support.fake_llm import FakeLLMProvider
 
 
-def test_create_app_selects_default_provider_at_startup(
+def test_create_app_requires_openai_api_key_at_startup(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
         "outreach_agent.app.load_llm_settings",
-        lambda: LLMSettings(provider="unsupported"),
+        lambda: LLMSettings(),
     )
 
-    with pytest.raises(ValueError, match="Unsupported LLM_PROVIDER"):
+    with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):
         create_app(artifact_dir=tmp_path)
 
 
@@ -30,7 +30,7 @@ def test_create_app_accepts_configured_default_provider_at_startup(
 ) -> None:
     monkeypatch.setattr(
         "outreach_agent.app.load_llm_settings",
-        lambda: LLMSettings(provider="openai", openai_api_key="test-openai-key"),
+        lambda: LLMSettings(openai_api_key="test-openai-key"),
     )
     client = TestClient(create_app(artifact_dir=tmp_path))
 

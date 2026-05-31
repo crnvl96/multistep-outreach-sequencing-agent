@@ -12,20 +12,20 @@ The implementation uses a flat module layout:
 
 ## Provider configuration
 
-Provider selection is `.env`-driven:
+Provider selection is intentionally fixed for the demo: normal runtime always uses OpenAI with the model `gpt-5.4-mini`. The provider and model cannot be overridden from `.env` or exported shell environment variables.
+
+The only `.env` value read for normal startup is:
 
 ```bash
-LLM_PROVIDER=openai
-LLM_MODEL=<model-name>
-OPENAI_API_KEY=<key>        # required for OpenAI
+OPENAI_API_KEY=<key>
 ```
 
-These values are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration. `LLM_PROVIDER` is required; the app does not default to the fake provider.
+Use the repository `.env.example` as the reference. Exported shell environment variables are ignored by this simplified local configuration.
 
 Runtime provider wiring is owned by `outreach_agent.llm`:
 
-1. `load_llm_settings()` reads `.env`.
-2. `select_llm_provider()` checks provider/API-key settings and applies model defaults.
+1. `load_llm_settings()` reads `OPENAI_API_KEY` from `.env`.
+2. `select_llm_provider()` requires the API key and constructs the fixed OpenAI provider/model.
 3. `ValidatingLLMProvider` validates structured outputs and performs one repair attempt if needed.
 
 ## Prompt ownership
@@ -42,7 +42,7 @@ The fake provider is only injected directly by automated tests. It is not select
 
 ## OpenAI provider
 
-`LLM_PROVIDER=openai` selects the OpenAI chat-completions provider and requires `OPENAI_API_KEY`.
+Normal runtime always selects the OpenAI chat-completions provider and requires `OPENAI_API_KEY`.
 
 The real provider uses the same injected method names covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
 

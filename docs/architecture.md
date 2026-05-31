@@ -18,9 +18,10 @@ This replaces the previous domain/protocols/integrations layer split. The goal i
 For normal runtime startup:
 
 1. `create_app()` in `app.py` calls `load_llm_settings()` from `outreach_agent.llm`.
-2. `select_llm_provider()` validates provider settings and API-key requirements.
-3. The selected raw OpenAI provider is wrapped with `ValidatingLLMProvider` for strict schema validation and one repair attempt.
-4. `create_app()` wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` from `outreach_agent.enrichment`.
+2. `load_llm_settings()` reads only `OPENAI_API_KEY` from the project `.env` file.
+3. `select_llm_provider()` validates the API key and constructs the fixed OpenAI provider with `gpt-5.4-mini`.
+4. The selected raw OpenAI provider is wrapped with `ValidatingLLMProvider` for strict schema validation and one repair attempt.
+5. `create_app()` wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` from `outreach_agent.enrichment`.
 
 Tests can still inject fake LLM or enrichment providers directly because the workflow only needs objects with the expected async methods.
 

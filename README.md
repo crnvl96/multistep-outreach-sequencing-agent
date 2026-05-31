@@ -4,12 +4,18 @@ Local FastAPI MVP for lead intake, deterministic enrichment, ICP scoring, Hot/Wa
 
 ## Quickstart
 
-Configure a real provider in `.env` first; the fake provider is test-only and cannot be selected for normal server startup.
+This demo only supports OpenAI for normal local runs. The provider and model are fixed in code: OpenAI with `gpt-5.4-mini`. They cannot be overridden from `.env` or exported shell environment variables.
+
+Copy `.env.example` to `.env` and set the only required value:
 
 ```bash
-# .env
-LLM_PROVIDER=openai
-LLM_MODEL=<openai-model-name>
+cp .env.example .env
+# edit .env and set OPENAI_API_KEY
+```
+
+The `.env` file should contain:
+
+```bash
 OPENAI_API_KEY=<your-openai-api-key>
 ```
 
@@ -38,26 +44,17 @@ BASE_URL=http://127.0.0.1:8000 ./scripts/send_hot_fixture.sh
 
 ## Provider configuration
 
-Provider settings are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration.
+Provider settings are intentionally not configurable for this demo. Normal startup always uses the OpenAI provider and the fixed default model `gpt-5.4-mini`.
 
-`LLM_PROVIDER` is required for normal app startup. If it is missing, startup fails instead of falling back to the fake test provider.
-
-### OpenAI provider
+The only `.env` setting the user must provide is:
 
 ```bash
-# .env
-LLM_PROVIDER=openai
-LLM_MODEL=<openai-model-name>
 OPENAI_API_KEY=<your-openai-api-key>
 ```
 
-Then run:
+Use `.env.example` as the reference for required local configuration. Exported shell environment variables are ignored by this simplified local configuration.
 
-```bash
-./scripts/run_server.sh
-```
-
-If `LLM_PROVIDER` is missing, unsupported, set to `fake`, or OpenAI is selected without `OPENAI_API_KEY`, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests.
+If `OPENAI_API_KEY` is missing, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests and is not available through `.env`.
 
 ## Run artifacts
 

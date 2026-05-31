@@ -76,22 +76,18 @@ class RecordingChatTransport:
         return self.outputs.pop(0)
 
 
-def test_openai_provider_selection_uses_configured_model() -> None:
+def test_openai_provider_selection_uses_fixed_model() -> None:
     provider = select_llm_provider(
-        LLMSettings(
-            provider="openai",
-            model="gpt-4.1-mini",
-            openai_api_key="test-openai-key",
-        )
+        LLMSettings(openai_api_key="test-openai-key")
     )
 
     assert isinstance(provider, ValidatingLLMProvider)
     assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.model == "gpt-4.1-mini"
+    assert provider.raw_provider.model == "gpt-5.4-mini"
 
 
-def test_provider_selection_requires_configured_provider() -> None:
-    with pytest.raises(LLMConfigurationError, match="LLM_PROVIDER is required"):
+def test_provider_selection_requires_openai_api_key() -> None:
+    with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY is required"):
         select_llm_provider(LLMSettings())
 
 
@@ -99,38 +95,11 @@ def test_default_dotenv_points_to_project_root() -> None:
     assert DEFAULT_DOTENV_PATH == Path.cwd() / ".env"
 
 
-def test_fake_provider_cannot_be_selected_from_config() -> None:
-    with pytest.raises(LLMConfigurationError, match="not available through config"):
-        select_llm_provider(LLMSettings(provider="fake"))
-
-
-def test_openai_selection_without_api_key_fails_clearly() -> None:
-    with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY"):
-        select_llm_provider(LLMSettings(provider="openai"))
-
-
-def test_unsupported_provider_fails_clearly() -> None:
-    with pytest.raises(ValueError, match="Unsupported LLM_PROVIDER: unsupported"):
-        select_llm_provider(LLMSettings(provider="unsupported"))
-
-
-def test_missing_provider_in_dotenv_has_no_fake_default(tmp_path: Path) -> None:
+def test_provider_selection_reads_openai_api_key_from_dotenv_file(
+    tmp_path: Path,
+) -> None:
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
-
-    settings = load_llm_settings(dotenv_path=dotenv_path)
-
-    assert settings.provider is None
-
-
-def test_provider_selection_reads_dotenv_file(tmp_path: Path) -> None:
-    dotenv_path = tmp_path / ".env"
-    dotenv_path.write_text(
-        "LLM_PROVIDER=openai\n"
-        "LLM_MODEL=gpt-5.4-mini\n"
-        "OPENAI_API_KEY=dotenv-openai-key\n",
-        encoding="utf-8",
-    )
 
     provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
 
@@ -149,9 +118,21 @@ def test_provider_selection_uses_dotenv_without_environment_override(
     monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
 
     dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
+
+    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
+
+    assert isinstance(provider, ValidatingLLMProvider)
+    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
+    assert provider.raw_provider.api_key == "dotenv-openai-key"
+    assert provider.raw_provider.model == "gpt-5.4-mini"
+
+
+def test_dotenv_provider_and_model_values_are_ignored(tmp_path: Path) -> None:
+    dotenv_path = tmp_path / ".env"
     dotenv_path.write_text(
-        "LLM_PROVIDER=openai\n"
-        "LLM_MODEL=dotenv-model\n"
+        "LLM_PROVIDER=fake\n"
+        "LLM_MODEL=gpt-4.1-mini\n"
         "OPENAI_API_KEY=dotenv-openai-key\n",
         encoding="utf-8",
     )
@@ -161,19 +142,6 @@ def test_provider_selection_uses_dotenv_without_environment_override(
     assert isinstance(provider, ValidatingLLMProvider)
     assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
     assert provider.raw_provider.api_key == "dotenv-openai-key"
-    assert provider.raw_provider.model == "dotenv-model"
-
-
-def test_openai_provider_selection_uses_default_model() -> None:
-    provider = select_llm_provider(
-        LLMSettings(
-            provider="openai",
-            openai_api_key="test-openai-key",
-        )
-    )
-
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
     assert provider.raw_provider.model == "gpt-5.4-mini"
 
 
