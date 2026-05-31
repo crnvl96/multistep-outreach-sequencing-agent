@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -6,17 +7,17 @@ from outreach_agent.enrichment import (
     MockAPIEnrichmentProvider,
     MockScrapeEnrichmentProvider,
 )
-from outreach_agent.llm import LLMProvider, load_llm_settings, select_llm_provider
+from outreach_agent.llm import load_llm_settings, select_llm_provider
 from outreach_agent.models import LeadIntake, LeadRunResponse
-from outreach_agent.workflow import RUNS_DIR, EnrichmentProvider, process_lead
+from outreach_agent.workflow import RUNS_DIR, process_lead
 
 
 def create_app(
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: EnrichmentProvider | None = None,
-    scrape_enrichment_provider: EnrichmentProvider | None = None,
-    llm_provider: LLMProvider | None = None,
+    api_enrichment_provider: Any | None = None,
+    scrape_enrichment_provider: Any | None = None,
+    llm_provider: Any | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Multistep Outreach Sequencing Agent")
 

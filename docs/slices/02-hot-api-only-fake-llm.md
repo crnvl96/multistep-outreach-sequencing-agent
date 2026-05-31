@@ -21,7 +21,7 @@ Requirements covered: 19, 22, 25-32, 35-40.
 
 Add the first successful scoring path using the fake LLM provider: a Hot fixture where mocked API enrichment alone produces a complete, strong-fit profile, the workflow skips mocked scraping, calls fake scoring, deterministically routes the lead to Hot, selects the Hot sequence plan, calls fake email generation, and returns a first email draft.
 
-This slice should establish the LLM provider interface used by the workflow, but only the fake provider needs to work here. It should also establish route-specific sequence selection for Hot and include scoring/email outputs in the decision chain and run artifact.
+This slice should establish the injected LLM provider methods used by the workflow, but only the fake provider needs to work here. It should also establish route-specific sequence selection for Hot and include scoring/email outputs in the decision chain and run artifact.
 
 ## Acceptance criteria
 
@@ -48,7 +48,7 @@ This slice should establish the LLM provider interface used by the workflow, but
 ## Implementation notes
 
 - The design says real LLM behavior is required for normal demos, but the fake provider is explicitly allowed for tests/dev. This slice should not implement the real OpenAI provider yet.
-- Keep the LLM provider contract provider-agnostic so real providers can be added later without changing orchestration.
+- Keep the LLM provider method names provider-agnostic so real providers can be added later without changing orchestration.
 - LLM calls are sequential by design: scoring first, route-specific email generation second.
 - Hot routing threshold: score 80-100, no critical missing data, and confidence/data confidence not low.
 - Hot sequence style: high-priority, concise, highly personalized, direct CTA, focused on urgent GTM or revenue workflow pain.

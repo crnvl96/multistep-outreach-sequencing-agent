@@ -22,9 +22,9 @@ The LLM scores fit and explains evidence. The application maps score and confide
 
 The workflow calls the LLM sequentially: first ICP scoring, then route-specific email generation. This is slower than parallelism, but the second prompt depends on the deterministic route selected after scoring.
 
-## Provider abstraction
+## Simple provider injection
 
-The workflow depends on a provider interface. The test fake provider and the OpenAI provider share the same validation and repair path, which keeps tests deterministic while allowing real provider demos.
+The app injects provider objects into the workflow instead of constructing them inside orchestration code. Tests inject fakes directly, while normal startup injects the OpenAI provider. This keeps behavior testable without maintaining separate protocol classes.
 
 ## Strict JSON validation and one repair
 

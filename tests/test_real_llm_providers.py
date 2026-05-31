@@ -7,7 +7,6 @@ import pytest
 
 from outreach_agent.llm import (
     DEFAULT_DOTENV_PATH,
-    ChatTransport,
     LLMConfigurationError,
     LLMSettings,
     OpenAIRawLLMProvider,
@@ -53,7 +52,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class RecordingChatTransport(ChatTransport):
+class RecordingChatTransport:
     def __init__(self, outputs: list[str]) -> None:
         self.outputs = outputs
         self.requests: list[dict[str, object]] = []

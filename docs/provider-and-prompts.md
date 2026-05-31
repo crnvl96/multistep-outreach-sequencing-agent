@@ -44,7 +44,7 @@ The fake provider is only injected directly by automated tests. It is not select
 
 `LLM_PROVIDER=openai` selects the OpenAI chat-completions provider and requires `OPENAI_API_KEY`.
 
-The real provider uses the workflow contract covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
+The real provider uses the same injected method names covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
 
 ## Scoring prompt behavior
 

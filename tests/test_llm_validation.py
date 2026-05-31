@@ -7,7 +7,7 @@ from outreach_agent.enrichment import (
     MockAPIEnrichmentProvider,
     MockScrapeEnrichmentProvider,
 )
-from outreach_agent.llm import RawLLMProvider, ValidatingLLMProvider
+from outreach_agent.llm import ValidatingLLMProvider
 from outreach_agent.models import (
     IcpScore,
     LeadIntake,
@@ -46,7 +46,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class ScriptedRepairProvider(RawLLMProvider):
+class ScriptedRepairProvider:
     def __init__(
         self,
         *,

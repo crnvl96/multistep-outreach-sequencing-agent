@@ -5,7 +5,7 @@ import urllib.request
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal
 
 from dotenv import dotenv_values
 from pydantic import BaseModel, Field, ValidationError
@@ -53,58 +53,6 @@ class LLMOutputInvalidError(ValueError):
         super().__init__(message)
 
 
-class RawLLMProvider(Protocol):
-    async def score_icp(self, profile: LeadProfile) -> object: ...
-
-    async def repair_score_icp(
-        self,
-        profile: LeadProfile,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object: ...
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> object: ...
-
-    async def repair_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object: ...
-
-
-class LLMProvider(Protocol):
-    async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]: ...
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> LLMCallResult[GeneratedEmail]: ...
-
-
-class ChatTransport(Protocol):
-    async def create_chat_completion(
-        self,
-        *,
-        endpoint_url: str,
-        api_key: str,
-        model: str,
-        messages: list[dict[str, str]],
-    ) -> str: ...
-
-
 @dataclass(frozen=True)
 class LLMSettings:
     provider: str | None = None
@@ -139,7 +87,7 @@ def load_llm_settings(
     )
 
 
-def select_llm_provider(settings: LLMSettings) -> LLMProvider:
+def select_llm_provider(settings: LLMSettings) -> ValidatingLLMProvider:
     if settings.provider is None:
         raise LLMConfigurationError("LLM_PROVIDER is required")
 
@@ -148,7 +96,7 @@ def select_llm_provider(settings: LLMSettings) -> LLMProvider:
     if provider_name == "fake":
         raise LLMConfigurationError(
             "The fake LLM provider is not available through config; "
-            "inject a test LLMProvider directly in tests instead"
+            "inject a test provider directly in tests instead"
         )
 
     if provider_name != "openai":
@@ -245,15 +193,13 @@ def extract_chat_completion_content(response_payload: object) -> str:
     return response.choices[0].message.content
 
 
-class ChatCompletionRawLLMProvider:
-    endpoint_url: str
-
+class OpenAIRawLLMProvider:
     def __init__(
         self,
         *,
         api_key: str,
         model: str,
-        transport: ChatTransport | None = None,
+        transport: Any | None = None,
     ) -> None:
         self.api_key = api_key
         self.model = model
@@ -306,19 +252,15 @@ class ChatCompletionRawLLMProvider:
 
     async def complete(self, messages: list[dict[str, str]]) -> str:
         return await self.transport.create_chat_completion(
-            endpoint_url=self.endpoint_url,
+            endpoint_url=OPENAI_CHAT_COMPLETIONS_URL,
             api_key=self.api_key,
             model=self.model,
             messages=messages,
         )
 
 
-class OpenAIRawLLMProvider(ChatCompletionRawLLMProvider):
-    endpoint_url = OPENAI_CHAT_COMPLETIONS_URL
-
-
 class ValidatingLLMProvider:
-    def __init__(self, raw_provider: RawLLMProvider) -> None:
+    def __init__(self, raw_provider: Any) -> None:
         self.raw_provider = raw_provider
 
     async def score_icp(
@@ -396,16 +338,21 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
 ) -> LLMCallResult[StructuredOutput]:
     output = await call_provider()
     calls = (call,)
+
     try:
         value = parse_structured_output(output, schema, call)
+
     except LLMOutputInvalidError as exc:
         repair_output = await repair_provider(
             output,
             build_repair_prompt(schema, prompt_label, exc),
         )
+
         repaired_calls = (call, repair_call)
+
         try:
             value = parse_structured_output(repair_output, schema, call)
+
         except LLMOutputInvalidError as repair_exc:
             repairs = (
                 LLMRepairAttempt(
@@ -414,12 +361,14 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
                     status="failed",
                 ),
             )
+
             raise LLMOutputInvalidError(
                 call,
                 str(repair_exc),
                 calls=repaired_calls,
                 repairs=repairs,
             ) from repair_exc
+
         repairs = (
             LLMRepairAttempt(
                 call=call,
@@ -427,11 +376,13 @@ async def call_with_one_repair[StructuredOutput: BaseModel](
                 status="repaired",
             ),
         )
+
         return LLMCallResult(
             value=value,
             calls=repaired_calls,
             repairs=repairs,
         )
+
     return LLMCallResult(value=value, calls=calls)
 
 

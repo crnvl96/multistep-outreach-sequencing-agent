@@ -14,7 +14,7 @@ Build a local-only Python FastAPI service with one primary lead intake endpoint.
 
 The system returns the full decision chain in the HTTP response, logs it server-side, and writes a timestamped JSON artifact for each run. Fixture shell scripts make it easy to exercise the Hot, Warm, Cold, and Insufficient Data paths with `curl`.
 
-The MVP uses real LLM behavior for scoring and email generation through a provider abstraction. OpenAI is the supported real provider. A clearly labeled fake provider is available only inside automated tests.
+The MVP uses real LLM behavior for scoring and email generation through injected provider objects. OpenAI is the supported real provider. A clearly labeled fake provider is available only inside automated tests.
 
 ## User Stories
 
@@ -78,7 +78,7 @@ The MVP uses real LLM behavior for scoring and email generation through a provid
 17. The MVP ICP is: B2B SaaS or AI/software companies with 50–500 employees, selling to mid-market or enterprise customers, operating in North America or Europe, and actively scaling outbound sales or go-to-market operations. Strong positive signals include SDR/AE/RevOps hiring, recent funding or launch activity, CRM/sales engagement tooling, manual lead qualification pain, personalization bottlenecks, or fragmented enrichment workflows. Strong negative signals include local/B2C businesses, very small companies without a sales motion, non-software businesses, unclear company identity, or no credible outbound/GTM need.
 18. The target buyer/persona for personalization must be documented as VP Sales, Head of Growth, Head of RevOps, Founder/CEO, or another GTM owner at the target company.
 19. LLM scoring must be real for normal demos and must not be mocked in the main OpenAI path.
-20. The LLM integration must use dependency inversion through a provider interface.
+20. The LLM integration must allow provider injection so tests can supply fakes without changing workflow code.
 21. The MVP must include an OpenAI real provider implementation.
 22. The MVP must include a clearly labeled fake provider for automated tests only.
 23. Provider selection and credentials must be configured through environment variables, expected as:
@@ -160,7 +160,7 @@ The MVP uses real LLM behavior for scoring and email generation through a provid
 - Keep enrichment staged and bounded: API first, then scrape only if thin, with each source used at most once.
 - Use deterministic rule-based thin-data checks instead of LLM thin-data checks. This makes the agent's enrichment decision easier to test and explain.
 - Use real LLM calls for scoring and email generation. This is the core reasoning part of the task and should not be mocked in the main demo path.
-- Use dependency inversion for LLM providers so the OpenAI provider and test fake provider share the same workflow contract.
+- Use simple provider injection so the OpenAI provider and test fake provider share the same workflow method names without extra protocol layers.
 - Support a fake LLM provider only inside automated tests.
 - Use two sequential LLM calls: scoring first, email generation second. This trades latency for correctness because the selected route determines which email prompt should be used.
 - Make routing deterministic in application code from LLM score and confidence rather than asking the LLM to choose the route directly.
@@ -177,7 +177,7 @@ Likely implementation areas:
 - Mock enrichment providers and fixture data.
 - Thin-data/completeness evaluator.
 - ICP definition and routing policy.
-- LLM provider abstraction plus an OpenAI provider and a test-only fake provider.
+- Injected LLM provider objects: an OpenAI provider and a test-only fake provider.
 - Prompt builders for scoring and route-specific email generation.
 - Decision-chain/run artifact writer.
 - Tests and fixture scripts.

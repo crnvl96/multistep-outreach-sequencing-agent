@@ -4,7 +4,7 @@ from typing import Literal
 
 import pytest
 
-from outreach_agent.llm import LLMCallResult, LLMProvider
+from outreach_agent.llm import LLMCallResult
 from outreach_agent.models import (
     Confidence,
     EnrichmentStep,
@@ -40,7 +40,7 @@ class TrackingEnrichmentProvider:
         )
 
 
-class DeterministicLLMProvider(LLMProvider):
+class DeterministicLLMProvider:
     async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
         score = IcpScore(
             score=72,

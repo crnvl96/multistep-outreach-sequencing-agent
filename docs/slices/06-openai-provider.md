@@ -15,7 +15,7 @@ Requirements covered: 19-24.
 
 ## What to build
 
-Implement the real OpenAI LLM provider behind the existing provider interface. Provider selection, model selection, and credentials should come from environment variables. The real provider should support both sequential workflow calls: ICP scoring and route-specific first email generation.
+Implement the real OpenAI LLM provider as an object injected into the workflow. Provider selection, model selection, and credentials should come from environment variables. The real provider should support both sequential workflow calls: ICP scoring and route-specific first email generation.
 
 This slice is HITL because full manual verification requires human-provided API keys and model choices.
 
@@ -41,7 +41,7 @@ This slice is HITL because full manual verification requires human-provided API 
 
 ## Implementation notes
 
-- Keep provider-specific HTTP/API details inside provider implementations; orchestration should depend only on the provider interface.
+- Keep provider-specific HTTP/API details inside provider implementations; orchestration should only call the injected provider methods.
 - Do not make live LLM tests part of the default automated test suite.
 - Use async-capable provider methods, but preserve workflow order: scoring first, then route-specific email generation.
 - The real provider prompts should reuse the same schema expectations validated by the application.

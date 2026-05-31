@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import Literal, Protocol
+from typing import Any, Literal
 from uuid import uuid4
 
-from outreach_agent.llm import LLMOutputInvalidError, LLMProvider
+from outreach_agent.llm import LLMOutputInvalidError
 from outreach_agent.models import (
     EnrichmentStep,
     GeneratedEmail,
@@ -28,13 +28,6 @@ logger = logging.getLogger(__name__)
 server_logger = logging.getLogger("uvicorn.error")
 
 ThinDataStage = Literal["after_api_enrichment", "after_scrape_enrichment"]
-
-
-class EnrichmentProvider(Protocol):
-    async def enrich(
-        self,
-        profile: LeadProfile,
-    ) -> tuple[LeadProfile, EnrichmentStep]: ...
 
 
 @dataclass(frozen=True)
@@ -154,9 +147,9 @@ async def process_lead(
     intake: LeadIntake,
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: EnrichmentProvider,
-    scrape_enrichment_provider: EnrichmentProvider,
-    llm_provider: LLMProvider,
+    api_enrichment_provider: Any,
+    scrape_enrichment_provider: Any,
+    llm_provider: Any,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
     started_timer = perf_counter()
@@ -237,7 +230,7 @@ async def process_lead(
 
 async def run_llm_phase(
     profile: LeadProfile,
-    llm_provider: LLMProvider,
+    llm_provider: Any,
 ) -> LLMPhaseOutcome:
     llm_calls: list[str] = []
     llm_repairs: list[LLMRepairAttempt] = []
