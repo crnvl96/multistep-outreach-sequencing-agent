@@ -22,17 +22,13 @@ from outreach_agent.domain.models import (
     SequencePlan,
     ThinDataCheck,
 )
-from outreach_agent.fixtures import (
-    MockEnrichmentData,
-    build_mock_enrichment_map,
-    lookup_keys,
-)
+from outreach_agent.fixtures import apply_mock_enrichment, build_mock_enrichment_map
+from outreach_agent.protocols.enrichment import APIEnrichmentProvider
 from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProvider
 
 logger = logging.getLogger(__name__)
 server_logger = logging.getLogger("uvicorn.error")
 
-EnrichmentSource = Literal["api", "scrape"]
 ThinDataStage = Literal["after_api_enrichment", "after_scrape_enrichment"]
 
 
@@ -61,7 +57,6 @@ REQUIRED_PROFILE_FIELDS = (
     "business_signals",
 )
 
-MOCK_API_ENRICHMENT = build_mock_enrichment_map("api")
 MOCK_SCRAPE_ENRICHMENT = build_mock_enrichment_map("scrape")
 
 SEQUENCES_BY_ROUTE: dict[Route, SequencePlan] = {
@@ -156,6 +151,7 @@ async def process_lead(
     intake: LeadIntake,
     *,
     artifact_dir: Path = RUNS_DIR,
+    api_enrichment_provider: APIEnrichmentProvider,
     llm_provider: LLMProvider,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
@@ -167,7 +163,7 @@ async def process_lead(
 
     profile = LeadProfile(**intake.model_dump())
 
-    profile, api_step = run_mock_api_enrichment(profile)
+    profile, api_step = await api_enrichment_provider.enrich(profile)
     enrichment_steps.append(api_step)
 
     first_check = check_thin_data(profile, stage="after_api_enrichment")
@@ -318,62 +314,10 @@ def log_run_summary(response: LeadRunResponse) -> None:
     server_logger.info(message, *args)
 
 
-def run_mock_api_enrichment(profile: LeadProfile) -> tuple[LeadProfile, EnrichmentStep]:
-    return apply_mock_enrichment(profile, "api", MOCK_API_ENRICHMENT)
-
-
 def run_mock_scrape_enrichment(
     profile: LeadProfile,
 ) -> tuple[LeadProfile, EnrichmentStep]:
     return apply_mock_enrichment(profile, "scrape", MOCK_SCRAPE_ENRICHMENT)
-
-
-def apply_mock_enrichment(
-    profile: LeadProfile,
-    source: EnrichmentSource,
-    enrichment_data: MockEnrichmentData,
-) -> tuple[LeadProfile, EnrichmentStep]:
-    patch = lookup_mock_data(profile, enrichment_data)
-    enriched_profile, fields_added = merge_profile(profile, patch)
-    return enriched_profile, EnrichmentStep(
-        source=source,
-        fields_added=fields_added,
-        data=patch,
-    )
-
-
-def lookup_mock_data(
-    profile: LeadProfile,
-    enrichment_data: MockEnrichmentData,
-) -> dict[str, object]:
-    for key in lookup_keys(profile):
-        if key in enrichment_data:
-            return enrichment_data[key]
-    return {}
-
-
-def merge_profile(
-    profile: LeadProfile,
-    patch: dict[str, object],
-) -> tuple[LeadProfile, list[str]]:
-    profile_data = profile.model_dump()
-    fields_added: list[str] = []
-
-    for field_name, value in patch.items():
-        if value in (None, "", []):
-            continue
-
-        current_value = profile_data.get(field_name)
-        if isinstance(current_value, list) and isinstance(value, list):
-            original_length = len(current_value)
-            current_value.extend(item for item in value if item not in current_value)
-            if len(current_value) > original_length:
-                fields_added.append(field_name)
-        elif not current_value:
-            profile_data[field_name] = value
-            fields_added.append(field_name)
-
-    return LeadProfile(**profile_data), fields_added
 
 
 def check_thin_data(

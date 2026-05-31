@@ -11,6 +11,7 @@ from outreach_agent.domain.models import (
     SequencePlan,
 )
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
+from outreach_agent.integrations.mock_api_enrichment import MockAPIEnrichmentProvider
 from outreach_agent.workflow import process_lead
 
 
@@ -112,6 +113,7 @@ def test_invalid_scoring_output_is_repaired_once_and_recorded(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
+            api_enrichment_provider=MockAPIEnrichmentProvider(),
             llm_provider=ValidatingLLMProvider(provider),
         )
     )
@@ -160,6 +162,7 @@ def test_invalid_email_output_is_repaired_once_and_recorded(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
+            api_enrichment_provider=MockAPIEnrichmentProvider(),
             llm_provider=ValidatingLLMProvider(provider),
         )
     )
@@ -208,6 +211,7 @@ def test_failed_scoring_repair_returns_error_and_persists_artifact(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
+            api_enrichment_provider=MockAPIEnrichmentProvider(),
             llm_provider=ValidatingLLMProvider(provider),
         )
     )
@@ -250,6 +254,7 @@ def test_failed_email_repair_returns_error_and_persists_decision_chain(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
+            api_enrichment_provider=MockAPIEnrichmentProvider(),
             llm_provider=ValidatingLLMProvider(provider),
         )
     )

@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from outreach_agent.domain.models import LeadIntake, LeadRunResponse
 from outreach_agent.integrations.llm.config import load_llm_settings
 from outreach_agent.integrations.llm.factory import select_llm_provider
+from outreach_agent.integrations.mock_api_enrichment import MockAPIEnrichmentProvider
+from outreach_agent.protocols.enrichment import APIEnrichmentProvider
 from outreach_agent.protocols.llm import LLMProvider
 from outreach_agent.workflow import RUNS_DIR, process_lead
 
@@ -12,11 +14,16 @@ from outreach_agent.workflow import RUNS_DIR, process_lead
 def create_app(
     *,
     artifact_dir: Path = RUNS_DIR,
+    api_enrichment_provider: APIEnrichmentProvider | None = None,
     llm_provider: LLMProvider | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Multistep Outreach Sequencing Agent")
 
     selected_llm_provider = llm_provider
+    selected_api_enrichment_provider = (
+        api_enrichment_provider
+        or MockAPIEnrichmentProvider()
+    )
 
     if selected_llm_provider is None:
         selected_llm_settings = load_llm_settings()
@@ -27,6 +34,7 @@ def create_app(
         return await process_lead(
             lead,
             artifact_dir=artifact_dir,
+            api_enrichment_provider=selected_api_enrichment_provider,
             llm_provider=selected_llm_provider,
         )
 

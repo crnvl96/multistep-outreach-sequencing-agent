@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from outreach_agent.domain.models import LeadProfile
+from outreach_agent.domain.models import EnrichmentStep, LeadProfile
 
 EnrichmentStage = Literal["api", "scrape"]
 MockPatch = dict[str, object]
@@ -137,3 +137,51 @@ def copy_patch(patch: MockPatch) -> MockPatch:
     for key, value in patch.items():
         copied[key] = list(value) if isinstance(value, list) else value
     return copied
+
+
+def lookup_mock_data(
+    profile: LeadProfile,
+    enrichment_data: MockEnrichmentData,
+) -> dict[str, object]:
+    for key in lookup_keys(profile):
+        if key in enrichment_data:
+            return enrichment_data[key]
+    return {}
+
+
+def merge_profile(
+    profile: LeadProfile,
+    patch: dict[str, object],
+) -> tuple[LeadProfile, list[str]]:
+    profile_data = profile.model_dump()
+    fields_added: list[str] = []
+
+    for field_name, value in patch.items():
+        if value in (None, "", []):
+            continue
+
+        current_value = profile_data.get(field_name)
+        if isinstance(current_value, list) and isinstance(value, list):
+            original_length = len(current_value)
+            current_value.extend(item for item in value if item not in current_value)
+            if len(current_value) > original_length:
+                fields_added.append(field_name)
+        elif not current_value:
+            profile_data[field_name] = value
+            fields_added.append(field_name)
+
+    return LeadProfile(**profile_data), fields_added
+
+
+def apply_mock_enrichment(
+    profile: LeadProfile,
+    source: Literal["api", "scrape"],
+    enrichment_data: MockEnrichmentData,
+) -> tuple[LeadProfile, EnrichmentStep]:
+    patch = lookup_mock_data(profile, enrichment_data)
+    enriched_profile, fields_added = merge_profile(profile, patch)
+    return enriched_profile, EnrichmentStep(
+        source=source,
+        fields_added=fields_added,
+        data=patch,
+    )
