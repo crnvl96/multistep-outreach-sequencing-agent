@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from outreach_agent.domain.models import EnrichmentStep, LeadProfile
-from outreach_agent.protocols.enrichment import APIEnrichmentProvider
+from outreach_agent.protocols.enrichment import APIEnrichmentProviderProtocol
 
 EnrichmentStage = Literal["api", "scrape"]
 MockPatch = dict[str, object]
@@ -181,7 +181,7 @@ def apply_mock_enrichment(
     )
 
 
-class MockAPIEnrichmentProvider(APIEnrichmentProvider):
+class MockAPIEnrichmentProvider(APIEnrichmentProviderProtocol):
     def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
         self.enrichment_data = enrichment_data or build_mock_enrichment_map("api")
 

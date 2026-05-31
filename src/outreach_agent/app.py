@@ -10,30 +10,28 @@ from outreach_agent.integrations.mock_scrape_enrichment import (
     MockScrapeEnrichmentProvider,
 )
 from outreach_agent.protocols.enrichment import (
-    APIEnrichmentProvider,
-    ScrapeEnrichmentProvider,
+    APIEnrichmentProviderProtocol,
+    ScrapeEnrichmentProviderProtocol,
 )
-from outreach_agent.protocols.llm import LLMProvider
+from outreach_agent.protocols.llm import LLMProviderProtocol
 from outreach_agent.workflow import RUNS_DIR, process_lead
 
 
 def create_app(
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: APIEnrichmentProvider | None = None,
-    scrape_enrichment_provider: ScrapeEnrichmentProvider | None = None,
-    llm_provider: LLMProvider | None = None,
+    api_enrichment_provider: APIEnrichmentProviderProtocol | None = None,
+    scrape_enrichment_provider: ScrapeEnrichmentProviderProtocol | None = None,
+    llm_provider: LLMProviderProtocol | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Multistep Outreach Sequencing Agent")
 
     selected_llm_provider = llm_provider
     selected_api_enrichment_provider = (
-        api_enrichment_provider
-        or MockAPIEnrichmentProvider()
+        api_enrichment_provider or MockAPIEnrichmentProvider()
     )
     selected_scrape_enrichment_provider = (
-        scrape_enrichment_provider
-        or MockScrapeEnrichmentProvider()
+        scrape_enrichment_provider or MockScrapeEnrichmentProvider()
     )
 
     if selected_llm_provider is None:

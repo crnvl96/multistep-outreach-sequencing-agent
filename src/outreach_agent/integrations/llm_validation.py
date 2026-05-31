@@ -15,8 +15,8 @@ from outreach_agent.domain.prompts import build_repair_prompt
 from outreach_agent.protocols import llm as _llm_protocols
 
 
-class ValidatingLLMProvider(_llm_protocols.LLMProvider):
-    def __init__(self, raw_provider: _llm_protocols.RawLLMProvider) -> None:
+class ValidatingLLMProvider(_llm_protocols.LLMProviderProtocol):
+    def __init__(self, raw_provider: _llm_protocols.RawLLMProviderProtocol) -> None:
         self.raw_provider = raw_provider
 
     async def score_icp(

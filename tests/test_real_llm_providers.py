@@ -20,7 +20,7 @@ from outreach_agent.integrations.llm.providers import (
     OpenRouterRawLLMProvider,
 )
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.protocols.llm import ChatTransport
+from outreach_agent.protocols.llm import ChatTransportProtocol
 from outreach_agent.workflow import select_sequence
 
 
@@ -58,7 +58,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class RecordingChatTransport(ChatTransport):
+class RecordingChatTransport(ChatTransportProtocol):
     def __init__(self, outputs: list[str]) -> None:
         self.outputs = outputs
         self.requests: list[dict[str, object]] = []

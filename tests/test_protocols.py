@@ -1,25 +1,25 @@
 def test_protocol_contracts_are_available_from_protocols_layer() -> None:
     from outreach_agent.protocols.enrichment import (
-        APIEnrichmentProvider,
-        ScrapeEnrichmentProvider,
+        APIEnrichmentProviderProtocol,
+        ScrapeEnrichmentProviderProtocol,
     )
     from outreach_agent.protocols.llm import (
-        ChatTransport,
+        ChatTransportProtocol,
         LLMCall,
         LLMCallResult,
         LLMOutputInvalidError,
-        LLMProvider,
-        RawLLMProvider,
+        LLMProviderProtocol,
+        RawLLMProviderProtocol,
     )
 
-    assert ChatTransport
+    assert ChatTransportProtocol
     assert LLMCall
     assert LLMCallResult
     assert LLMOutputInvalidError
-    assert LLMProvider
-    assert RawLLMProvider
-    assert APIEnrichmentProvider
-    assert ScrapeEnrichmentProvider
+    assert LLMProviderProtocol
+    assert RawLLMProviderProtocol
+    assert APIEnrichmentProviderProtocol
+    assert ScrapeEnrichmentProviderProtocol
 
 
 def test_enrichment_protocols_are_exported_from_protocols_layer() -> None:

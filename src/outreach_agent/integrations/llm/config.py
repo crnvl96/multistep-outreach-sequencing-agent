@@ -14,7 +14,7 @@ class LLMSettings:
     openrouter_api_key: str | None = None
 
 
-def _read_dotenv(dotenv_path: Path) -> dict[str, str]:
+def read_dotenv(dotenv_path: Path) -> dict[str, str]:
     if not dotenv_path.exists():
         return {}
     return {
@@ -28,7 +28,7 @@ def load_llm_settings(
     *,
     dotenv_path: Path = DEFAULT_DOTENV_PATH,
 ) -> LLMSettings:
-    dotenv_env = _read_dotenv(dotenv_path)
+    dotenv_env = read_dotenv(dotenv_path)
 
     return LLMSettings(
         provider=dotenv_env.get("LLM_PROVIDER"),

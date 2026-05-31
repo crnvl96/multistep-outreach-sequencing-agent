@@ -8,7 +8,7 @@ from outreach_agent.domain.models import (
     SequencePlan,
 )
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
-from outreach_agent.protocols.llm import RawLLMProvider
+from outreach_agent.protocols.llm import RawLLMProviderProtocol
 
 _FIXTURE_KEY_BY_ALIAS: dict[str, str] = {
     "signalspring.io": "warm",
@@ -52,7 +52,7 @@ ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
 
 
-class FakeRawLLMProvider(RawLLMProvider):
+class FakeRawLLMProvider(RawLLMProviderProtocol):
     async def score_icp(self, profile: LeadProfile) -> IcpScore:
         fixture_key = fixture_key_for_profile(profile)
         try:

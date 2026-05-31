@@ -5,8 +5,8 @@ from outreach_agent.domain.prompts import (
     build_scoring_messages,
 )
 from outreach_agent.integrations.llm.transport import UrllibChatTransport
-from outreach_agent.protocols.llm import ChatTransport as _ChatTransport
-from outreach_agent.protocols.llm import RawLLMProvider as _RawLLMProvider
+from outreach_agent.protocols.llm import ChatTransportProtocol as _ChatTransport
+from outreach_agent.protocols.llm import RawLLMProviderProtocol as _RawLLMProvider
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"

@@ -39,7 +39,7 @@ REAL_PROVIDER_SPECS = {
 }
 
 
-def select_llm_provider(settings: LLMSettings) -> _llm_protocols.LLMProvider:
+def select_llm_provider(settings: LLMSettings) -> _llm_protocols.LLMProviderProtocol:
     if settings.provider is None:
         raise LLMConfigurationError("LLM_PROVIDER is required")
 

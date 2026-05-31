@@ -23,10 +23,10 @@ from outreach_agent.domain.models import (
     ThinDataCheck,
 )
 from outreach_agent.protocols.enrichment import (
-    APIEnrichmentProvider,
-    ScrapeEnrichmentProvider,
+    APIEnrichmentProviderProtocol,
+    ScrapeEnrichmentProviderProtocol,
 )
-from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProvider
+from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProviderProtocol
 
 logger = logging.getLogger(__name__)
 server_logger = logging.getLogger("uvicorn.error")
@@ -151,9 +151,9 @@ async def process_lead(
     intake: LeadIntake,
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: APIEnrichmentProvider,
-    scrape_enrichment_provider: ScrapeEnrichmentProvider,
-    llm_provider: LLMProvider,
+    api_enrichment_provider: APIEnrichmentProviderProtocol,
+    scrape_enrichment_provider: ScrapeEnrichmentProviderProtocol,
+    llm_provider: LLMProviderProtocol,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
     started_timer = perf_counter()
@@ -234,7 +234,7 @@ async def process_lead(
 
 async def run_llm_phase(
     profile: LeadProfile,
-    llm_provider: LLMProvider,
+    llm_provider: LLMProviderProtocol,
 ) -> LLMPhaseOutcome:
     llm_calls: list[str] = []
     llm_repairs: list[LLMRepairAttempt] = []
@@ -313,7 +313,6 @@ def log_run_summary(response: LeadRunResponse) -> None:
     )
     logger.info(message, *args)
     server_logger.info(message, *args)
-
 
 
 def check_thin_data(

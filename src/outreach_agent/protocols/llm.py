@@ -37,7 +37,7 @@ class LLMOutputInvalidError(ValueError):
         super().__init__(message)
 
 
-class RawLLMProvider(Protocol):
+class RawLLMProviderProtocol(Protocol):
     async def score_icp(self, profile: LeadProfile) -> object: ...
 
     async def repair_score_icp(
@@ -66,7 +66,7 @@ class RawLLMProvider(Protocol):
     ) -> object: ...
 
 
-class LLMProvider(Protocol):
+class LLMProviderProtocol(Protocol):
     async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]: ...
 
     async def generate_first_email(
@@ -78,7 +78,7 @@ class LLMProvider(Protocol):
     ) -> LLMCallResult[GeneratedEmail]: ...
 
 
-class ChatTransport(Protocol):
+class ChatTransportProtocol(Protocol):
     async def create_chat_completion(
         self,
         *,
@@ -89,11 +89,19 @@ class ChatTransport(Protocol):
     ) -> str: ...
 
 
+RawLLMProvider = RawLLMProviderProtocol
+LLMProvider = LLMProviderProtocol
+ChatTransport = ChatTransportProtocol
+
+
 __all__ = [
     "ChatTransport",
+    "ChatTransportProtocol",
     "LLMCall",
     "LLMCallResult",
     "LLMOutputInvalidError",
     "LLMProvider",
+    "LLMProviderProtocol",
     "RawLLMProvider",
+    "RawLLMProviderProtocol",
 ]

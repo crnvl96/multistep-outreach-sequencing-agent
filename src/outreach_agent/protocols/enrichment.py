@@ -3,20 +3,27 @@ from typing import Protocol
 from outreach_agent.domain.models import EnrichmentStep, LeadProfile
 
 
-class APIEnrichmentProvider(Protocol):
+class APIEnrichmentProviderProtocol(Protocol):
     async def enrich(
         self,
         profile: LeadProfile,
-    ) -> tuple[LeadProfile, EnrichmentStep]:
-        ...
+    ) -> tuple[LeadProfile, EnrichmentStep]: ...
 
 
-class ScrapeEnrichmentProvider(Protocol):
+class ScrapeEnrichmentProviderProtocol(Protocol):
     async def enrich(
         self,
         profile: LeadProfile,
-    ) -> tuple[LeadProfile, EnrichmentStep]:
-        ...
+    ) -> tuple[LeadProfile, EnrichmentStep]: ...
 
 
-__all__ = ["APIEnrichmentProvider", "ScrapeEnrichmentProvider"]
+APIEnrichmentProvider = APIEnrichmentProviderProtocol
+ScrapeEnrichmentProvider = ScrapeEnrichmentProviderProtocol
+
+
+__all__ = [
+    "APIEnrichmentProvider",
+    "APIEnrichmentProviderProtocol",
+    "ScrapeEnrichmentProvider",
+    "ScrapeEnrichmentProviderProtocol",
+]

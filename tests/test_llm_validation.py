@@ -15,7 +15,7 @@ from outreach_agent.integrations.mock_api_enrichment import MockAPIEnrichmentPro
 from outreach_agent.integrations.mock_scrape_enrichment import (
     MockScrapeEnrichmentProvider,
 )
-from outreach_agent.protocols.llm import RawLLMProvider
+from outreach_agent.protocols.llm import RawLLMProviderProtocol
 from outreach_agent.workflow import process_lead
 
 
@@ -47,7 +47,7 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class ScriptedRepairProvider(RawLLMProvider):
+class ScriptedRepairProvider(RawLLMProviderProtocol):
     def __init__(
         self,
         *,
@@ -103,7 +103,6 @@ class ScriptedRepairProvider(RawLLMProvider):
         self.email_repairs += 1
         self.email_repair_prompt = repair_prompt
         return self.email_repair_output
-
 
 
 def test_invalid_scoring_output_is_repaired_once_and_recorded(
