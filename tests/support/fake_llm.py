@@ -7,9 +7,46 @@ from outreach_agent.domain.models import (
     Route,
     SequencePlan,
 )
-from outreach_agent.fixtures import fixture_key_for_profile
 from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
 from outreach_agent.protocols.llm import RawLLMProvider
+
+_FIXTURE_KEY_BY_ALIAS: dict[str, str] = {
+    "signalspring.io": "warm",
+    "signalspring software": "warm",
+    "nimbusforge.ai": "hot",
+    "nimbusforge ai": "hot",
+    "greenfork-catering.example": "cold",
+    "greenfork catering": "cold",
+    "papertrail-cafe.example": "insufficient_data",
+    "papertrail cafe": "insufficient_data",
+}
+
+
+def normalize_lookup_key(value: str) -> str:
+    normalized = value.strip().lower()
+    normalized = normalized.removeprefix("https://")
+    normalized = normalized.removeprefix("http://")
+    normalized = normalized.removeprefix("www.")
+    return normalized.rstrip("/")
+
+
+def fixture_key_for_profile(profile: LeadProfile) -> str:
+    keys = [profile.company_domain, profile.company_name]
+    if profile.lead_email and "@" in profile.lead_email:
+        keys.append(profile.lead_email.rsplit("@", maxsplit=1)[1])
+
+    for key in keys:
+        if key is None:
+            continue
+
+        normalized = normalize_lookup_key(key)
+        try:
+            return _FIXTURE_KEY_BY_ALIAS[normalized]
+        except KeyError:
+            continue
+
+    raise ValueError(f"No mock lead fixture configured for {profile.company_name}")
+
 
 ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
