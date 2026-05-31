@@ -1,13 +1,13 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
 from outreach_agent.llm.config import LLMSettings
 from outreach_agent.llm.real import (
     ChatCompletionRawLLMProvider,
     OpenAIRawLLMProvider,
     OpenRouterRawLLMProvider,
 )
-from outreach_agent.llm.validation import ValidatingLLMProvider
 from outreach_agent.protocols.llm import LLMProvider as _LLMProvider
 
 

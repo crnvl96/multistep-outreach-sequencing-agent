@@ -10,7 +10,7 @@ from outreach_agent.domain.models import (
     Route,
     SequencePlan,
 )
-from outreach_agent.llm.validation import ValidatingLLMProvider
+from outreach_agent.integrations.llm_validation import ValidatingLLMProvider
 from outreach_agent.workflow import process_lead
 
 

@@ -1,10 +1,13 @@
 import json
 
+from pydantic import BaseModel
+
 from outreach_agent.domain.models import IcpScore, LeadProfile
 from outreach_agent.domain.prompts import (
     ICP_DEFINITION,
     build_email_messages,
     build_repair_messages,
+    build_repair_prompt,
     build_scoring_messages,
 )
 from outreach_agent.workflow import select_sequence
@@ -90,6 +93,11 @@ def test_build_email_messages_includes_route_sequence_scoring_and_schema() -> No
     assert "personalization_notes" in user_prompt
 
 
+class DummyStructuredOutput(BaseModel):
+    score: int
+    summary: str
+
+
 def test_build_repair_messages_appends_invalid_output_then_prompt() -> None:
     original_messages = [
         {"role": "system", "content": "system"},
@@ -107,3 +115,21 @@ def test_build_repair_messages_appends_invalid_output_then_prompt() -> None:
         "content": json.dumps(invalid_output, indent=2, sort_keys=True),
     }
     assert messages[3] == {"role": "user", "content": repair_prompt}
+
+
+def test_build_repair_prompt_includes_schema_fields_and_validation_error() -> None:
+    prompt = build_repair_prompt(
+        DummyStructuredOutput,
+        "scoring",
+        ValueError("Missing required field"),
+    )
+
+    assert (
+        prompt
+        == (
+            "Return only valid JSON matching the scoring schema. "
+            "Required fields: score, summary. "
+            "Do not include markdown fences, prose, or commentary. "
+            "Validation error: Missing required field"
+        )
+    )

@@ -1,5 +1,7 @@
 import json
 
+from pydantic import BaseModel
+
 from outreach_agent.domain.models import (
     GeneratedEmail,
     IcpScore,
@@ -113,11 +115,26 @@ def stringify_llm_output(output: object) -> str:
     return json_for_prompt(output)
 
 
+def build_repair_prompt(
+    schema: type[BaseModel],
+    step_name: str,
+    error: Exception,
+) -> str:
+    fields = ", ".join(schema.model_fields)
+    return (
+        f"Return only valid JSON matching the {step_name} schema. "
+        f"Required fields: {fields}. "
+        "Do not include markdown fences, prose, or commentary. "
+        f"Validation error: {error}"
+    )
+
+
 __all__ = [
     "ICP_DEFINITION",
     "build_scoring_messages",
     "build_email_messages",
     "build_repair_messages",
+    "build_repair_prompt",
     "json_for_prompt",
     "stringify_llm_output",
 ]

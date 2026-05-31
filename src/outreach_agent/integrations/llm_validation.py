@@ -11,6 +11,7 @@ from outreach_agent.domain.models import (
     Route,
     SequencePlan,
 )
+from outreach_agent.domain.prompts import build_repair_prompt
 from outreach_agent.protocols import llm as _llm_protocols
 
 
@@ -158,18 +159,4 @@ def format_validation_error(exc: json.JSONDecodeError | ValidationError) -> str:
     return "; ".join(
         f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
         for error in errors
-    )
-
-
-def build_repair_prompt(
-    schema: type[BaseModel],
-    step_name: str,
-    error: Exception,
-) -> str:
-    fields = ", ".join(schema.model_fields)
-    return (
-        f"Return only valid JSON matching the {step_name} schema. "
-        f"Required fields: {fields}. "
-        "Do not include markdown fences, prose, or commentary. "
-        f"Validation error: {error}"
     )
