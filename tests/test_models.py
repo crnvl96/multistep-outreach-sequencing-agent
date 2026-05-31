@@ -1,7 +1,9 @@
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
-from outreach_agent.domain.models import LeadIntake
+from outreach_agent.domain.models import EnrichmentStep, LeadIntake
 
 
 def test_lead_intake_accepts_domain() -> None:
@@ -60,3 +62,21 @@ def test_lead_intake_rejects_extra_fields() -> None:
 
     with pytest.raises(ValidationError):
         LeadIntake(**payload)
+
+
+def test_enrichment_step_source_accepts_generic_api_label() -> None:
+    step = EnrichmentStep(source="api", fields_added=[], data={})
+
+    assert step.source == "api"
+
+
+def test_enrichment_step_source_accepts_generic_scrape_label() -> None:
+    step = EnrichmentStep(source="scrape", fields_added=[], data={})
+
+    assert step.source == "scrape"
+
+
+def test_enrichment_step_rejects_mock_specific_api_label() -> None:
+    invalid_source: Any = "mock_api"
+    with pytest.raises(ValidationError):
+        EnrichmentStep(source=invalid_source, fields_added=[], data={})

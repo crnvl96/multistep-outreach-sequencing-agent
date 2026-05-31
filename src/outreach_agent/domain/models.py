@@ -42,7 +42,7 @@ class LeadProfile(BaseModel):
 
 
 class EnrichmentStep(BaseModel):
-    source: Literal["mock_api", "mock_scrape"]
+    source: Literal["api", "scrape"]
     status: Literal["completed"] = "completed"
     fields_added: list[str]
     data: dict[str, object]

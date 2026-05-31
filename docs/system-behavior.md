@@ -34,11 +34,12 @@ Optional/evidence fields from the spec include `tech_stack`, `funding_stage`, `h
 
 Enrichment is deterministic and fixture-backed so demos and tests are repeatable.
 
-1. Mocked external API enrichment always runs first.
-2. The application performs a thin-data check against required scoring fields.
-3. Mocked scraping runs only when the API result is still thin.
-4. Each source runs at most once per lead.
-5. A second thin-data check runs after scraping when scraping was needed.
+1. Enrichment step `source` values are logical labels: `api` and `scrape`.
+2. Mocked external API enrichment always runs first.
+3. The application performs a thin-data check against required scoring fields.
+4. Mocked scraping runs only when the API result is still thin.
+5. Each source runs at most once per lead.
+6. A second thin-data check runs after scraping when scraping was needed.
 
 If critical required fields are still missing after all allowed enrichment, the run returns `insufficient_data`. In that case the workflow does not call the LLM for scoring or email generation.
 

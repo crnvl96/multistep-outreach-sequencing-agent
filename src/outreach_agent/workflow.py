@@ -32,7 +32,7 @@ from outreach_agent.protocols.llm import LLMOutputInvalidError, LLMProvider
 logger = logging.getLogger(__name__)
 server_logger = logging.getLogger("uvicorn.error")
 
-EnrichmentSource = Literal["mock_api", "mock_scrape"]
+EnrichmentSource = Literal["api", "scrape"]
 ThinDataStage = Literal["after_api_enrichment", "after_scrape_enrichment"]
 
 
@@ -319,13 +319,13 @@ def log_run_summary(response: LeadRunResponse) -> None:
 
 
 def run_mock_api_enrichment(profile: LeadProfile) -> tuple[LeadProfile, EnrichmentStep]:
-    return apply_mock_enrichment(profile, "mock_api", MOCK_API_ENRICHMENT)
+    return apply_mock_enrichment(profile, "api", MOCK_API_ENRICHMENT)
 
 
 def run_mock_scrape_enrichment(
     profile: LeadProfile,
 ) -> tuple[LeadProfile, EnrichmentStep]:
-    return apply_mock_enrichment(profile, "mock_scrape", MOCK_SCRAPE_ENRICHMENT)
+    return apply_mock_enrichment(profile, "scrape", MOCK_SCRAPE_ENRICHMENT)
 
 
 def apply_mock_enrichment(

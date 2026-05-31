@@ -67,7 +67,7 @@ def test_post_leads_routes_hot_fixture_with_fake_llm(
     assert data["final_route"] == "hot"
     assert data["llm_calls"] == ["score_icp", "generate_first_email"]
 
-    assert [step["source"] for step in data["enrichment_steps"]] == ["mock_api"]
+    assert [step["source"] for step in data["enrichment_steps"]] == ["api"]
     assert data["thin_data_checks"] == [
         {
             "stage": "after_api_enrichment",
@@ -126,8 +126,8 @@ def test_post_leads_routes_warm_fixture_after_scrape_fallback(
     assert data["llm_calls"] == ["score_icp", "generate_first_email"]
 
     assert [step["source"] for step in data["enrichment_steps"]] == [
-        "mock_api",
-        "mock_scrape",
+        "api",
+        "scrape",
     ]
     assert [check["stage"] for check in data["thin_data_checks"]] == [
         "after_api_enrichment",
@@ -192,7 +192,7 @@ def test_post_leads_routes_cold_fixture_with_low_pressure_email(
     assert data["status"] == "routed"
     assert data["final_route"] == "cold"
     assert data["llm_calls"] == ["score_icp", "generate_first_email"]
-    assert [step["source"] for step in data["enrichment_steps"]] == ["mock_api"]
+    assert [step["source"] for step in data["enrichment_steps"]] == ["api"]
     assert data["thin_data_checks"] == [
         {
             "stage": "after_api_enrichment",
@@ -254,8 +254,8 @@ def test_post_leads_returns_insufficient_data_decision_chain(
     assert data["llm_calls"] == []
 
     assert [step["source"] for step in data["enrichment_steps"]] == [
-        "mock_api",
-        "mock_scrape",
+        "api",
+        "scrape",
     ]
     assert [check["stage"] for check in data["thin_data_checks"]] == [
         "after_api_enrichment",
