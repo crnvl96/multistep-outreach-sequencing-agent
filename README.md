@@ -82,9 +82,10 @@ Every request writes a timestamped JSON decision-chain artifact under `runs/`. T
 
 Reviewer-facing docs live under `docs/`:
 
+- `docs/architecture.md` documents the production layer split, provider wiring, and import guard expectations.
 - `docs/roadmap.md` explains the MVP goal, fictional ICP, target persona, and implemented paths.
 - `docs/system-behavior.md` explains intake, enrichment, routing, sequence behavior, validation, and run artifacts.
-- `docs/provider-and-prompts.md` explains OpenAI/OpenRouter configuration, test fake-provider usage, and prompt behavior.
+- `docs/provider-and-prompts.md` explains OpenAI/OpenRouter configuration, test fake-provider usage, prompt behavior, and prompt ownership.
 - `docs/decisions.md` and `docs/tradeoffs.md` summarize major design choices and scope tradeoffs.
 
 ## Development checks
