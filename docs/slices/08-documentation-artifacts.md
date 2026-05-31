@@ -25,7 +25,7 @@ This slice should make the project understandable to a reviewer who has only the
 - [x] Documentation explains deterministic routing thresholds and why the application owns routing instead of the LLM.
 - [x] Documentation explains Hot, Warm, and Cold sequence plans, including first-email style differences.
 - [x] Documentation explains that only the first email is generated in the MVP.
-- [x] Documentation explains LLM provider configuration for fake, OpenAI, and OpenRouter.
+- [x] Documentation explains LLM provider configuration for OpenAI and the test-only fake provider.
 - [x] Documentation explains strict JSON validation, one repair attempt, and `llm_output_invalid` behavior.
 - [x] Documentation explains where decision-chain run artifacts are written and what they contain.
 - [x] Documentation records key tradeoffs: mocked enrichment vs real LLM, sequential LLM calls vs parallelism, local-only/no auth, and narrow MVP scope.
@@ -44,7 +44,7 @@ This slice should make the project understandable to a reviewer who has only the
 - `03-warm-scrape-fallback.md`
 - `04-cold-route-and-thresholds.md`
 - `05-llm-validation-repair.md`
-- `06-openai-openrouter-providers.md`
+- `06-openai-provider.md`
 
 ## Implementation notes
 

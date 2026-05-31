@@ -44,7 +44,7 @@ This slice should be testable entirely with fake provider variants that simulate
 - The repair prompt should ask the provider to return only valid JSON matching the expected schema.
 - Keep validation/provider concerns separated from deterministic routing.
 - Preserve the failed raw/invalid output in logs or artifacts only if it is safe and useful; avoid leaking secrets from provider errors.
-- This slice prepares the real OpenAI/OpenRouter providers for reliable structured output handling.
+- This slice prepares the real OpenAI provider for reliable structured output handling.
 
 ## Review
 

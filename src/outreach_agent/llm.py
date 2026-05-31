@@ -27,7 +27,7 @@ from outreach_agent.prompts import (
 
 LLMCall = Literal["score_icp", "generate_first_email"]
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
-OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 DEFAULT_DOTENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 
 
@@ -110,19 +110,10 @@ class LLMSettings:
     provider: str | None = None
     model: str | None = None
     openai_api_key: str | None = None
-    openrouter_api_key: str | None = None
 
 
 class LLMConfigurationError(ValueError):
     pass
-
-
-@dataclass(frozen=True)
-class RealProviderSpec:
-    raw_provider: type[ChatCompletionRawLLMProvider]
-    api_key: Callable[[LLMSettings], str | None]
-    api_key_name: str
-    default_model: str
 
 
 def read_dotenv(dotenv_path: Path) -> dict[str, str]:
@@ -145,7 +136,6 @@ def load_llm_settings(
         provider=dotenv_env.get("LLM_PROVIDER"),
         model=dotenv_env.get("LLM_MODEL"),
         openai_api_key=dotenv_env.get("OPENAI_API_KEY"),
-        openrouter_api_key=dotenv_env.get("OPENROUTER_API_KEY"),
     )
 
 
@@ -161,23 +151,18 @@ def select_llm_provider(settings: LLMSettings) -> LLMProvider:
             "inject a test LLMProvider directly in tests instead"
         )
 
-    provider_spec = REAL_PROVIDER_SPECS.get(provider_name)
+    if provider_name != "openai":
+        raise ValueError(f"Unsupported LLM_PROVIDER: {provider_name}")
 
-    if not provider_spec:
-        raise ValueError(f"Unsupported LLM_PROVIDER for this slice: {provider_name}")
-
-    api_key = provider_spec.api_key(settings)
-
-    if not api_key:
+    if not settings.openai_api_key:
         raise LLMConfigurationError(
-            f"{provider_spec.api_key_name} is required when "
-            f"LLM_PROVIDER={provider_name}"
+            "OPENAI_API_KEY is required when LLM_PROVIDER=openai"
         )
 
     return ValidatingLLMProvider(
-        provider_spec.raw_provider(
-            api_key=api_key,
-            model=settings.model or provider_spec.default_model,
+        OpenAIRawLLMProvider(
+            api_key=settings.openai_api_key,
+            model=settings.model or DEFAULT_OPENAI_MODEL,
         )
     )
 
@@ -330,26 +315,6 @@ class ChatCompletionRawLLMProvider:
 
 class OpenAIRawLLMProvider(ChatCompletionRawLLMProvider):
     endpoint_url = OPENAI_CHAT_COMPLETIONS_URL
-
-
-class OpenRouterRawLLMProvider(ChatCompletionRawLLMProvider):
-    endpoint_url = OPENROUTER_CHAT_COMPLETIONS_URL
-
-
-REAL_PROVIDER_SPECS = {
-    "openai": RealProviderSpec(
-        raw_provider=OpenAIRawLLMProvider,
-        api_key=lambda settings: settings.openai_api_key,
-        api_key_name="OPENAI_API_KEY",
-        default_model="gpt-5.4-mini",
-    ),
-    "openrouter": RealProviderSpec(
-        raw_provider=OpenRouterRawLLMProvider,
-        api_key=lambda settings: settings.openrouter_api_key,
-        api_key_name="OPENROUTER_API_KEY",
-        default_model="deepseek-v4-flash",
-    ),
-}
 
 
 class ValidatingLLMProvider:

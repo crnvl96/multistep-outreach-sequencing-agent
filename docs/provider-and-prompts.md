@@ -6,7 +6,7 @@ The implementation uses a flat module layout:
 
 - `models.py`: schemas for intake, scoring, routing, email, errors, and artifacts.
 - `prompts.py`: scoring, email, and repair prompt builders.
-- `llm.py`: provider configuration, OpenAI/OpenRouter clients, transport, validation, and repair.
+- `llm.py`: provider configuration, OpenAI client, transport, validation, and repair.
 - `enrichment.py`: deterministic fixture-backed enrichment providers.
 - `workflow.py` / `app.py`: orchestration and FastAPI wiring.
 
@@ -15,10 +15,9 @@ The implementation uses a flat module layout:
 Provider selection is `.env`-driven:
 
 ```bash
-LLM_PROVIDER=openai|openrouter
+LLM_PROVIDER=openai
 LLM_MODEL=<model-name>
 OPENAI_API_KEY=<key>        # required for OpenAI
-OPENROUTER_API_KEY=<key>    # required for OpenRouter
 ```
 
 These values are read from the project `.env` file. Exported shell environment variables are ignored by this simplified local configuration. `LLM_PROVIDER` is required; the app does not default to the fake provider.
@@ -41,13 +40,11 @@ Prompt construction lives in `outreach_agent.prompts` so policy remains easy to 
 
 The fake provider is only injected directly by automated tests. It is not selectable through `.env` and is not presented as real model behavior.
 
-## OpenAI and OpenRouter providers
+## OpenAI provider
 
 `LLM_PROVIDER=openai` selects the OpenAI chat-completions provider and requires `OPENAI_API_KEY`.
 
-`LLM_PROVIDER=openrouter` selects the OpenRouter chat-completions provider and requires `OPENROUTER_API_KEY`.
-
-Both real providers use the workflow contract covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
+The real provider uses the workflow contract covered by the test fake provider: score first, validate/repair if needed, route in application code, then generate the first email for the chosen route.
 
 ## Scoring prompt behavior
 

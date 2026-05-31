@@ -10,13 +10,13 @@ AFK
 
 - 1. As a reviewer, I want to send a lead to a local HTTP endpoint with `curl`, so that I can evaluate the workflow without n8n or external orchestration tooling.
 - 2. As a reviewer, I want fixture scripts for representative leads, so that I can quickly test the Hot, Warm, Cold, and Insufficient Data paths.
-- 12. As a developer, I want provider configuration through environment variables, so that OpenAI and OpenRouter can be swapped without changing workflow code.
+- 12. As a developer, I want provider configuration through environment variables, so that OpenAI can be configured without changing workflow code.
 
 Requirements covered: 41-42.
 
 ## What to build
 
-Add reviewer-facing helper scripts and quickstart documentation. A reviewer should be able to start the local server, run Hot/Warm/Cold/Insufficient fixture requests with shell scripts, and understand how to switch between fake, OpenAI, and OpenRouter providers.
+Add reviewer-facing helper scripts and quickstart documentation. A reviewer should be able to start the local server, run Hot/Warm/Cold/Insufficient fixture requests with shell scripts, and understand how to configure the OpenAI provider.
 
 This slice should make the existing implemented paths easy to demo, not add new workflow behavior.
 
@@ -29,7 +29,7 @@ This slice should make the existing implemented paths easy to demo, not add new 
 - [x] An Insufficient Data fixture script sends a predefined `curl` request and prints the response.
 - [x] Scripts target the local HTTP endpoint and do not bypass the API.
 - [x] Scripts are documented with copy-pasteable commands in README or a quickstart doc.
-- [x] Docs explain the required environment variables for fake, OpenAI, and OpenRouter provider modes.
+- [x] Docs explain the required environment variables for OpenAI and the test-only fake provider.
 - [x] Docs explain where run artifacts are written.
 
 ## Verification
@@ -45,7 +45,7 @@ This slice should make the existing implemented paths easy to demo, not add new 
 - `02-hot-api-only-fake-llm.md`
 - `03-warm-scrape-fallback.md`
 - `04-cold-route-and-thresholds.md`
-- `06-openai-openrouter-providers.md`
+- `06-openai-provider.md`
 
 ## Implementation notes
 
@@ -56,7 +56,7 @@ This slice should make the existing implemented paths easy to demo, not add new 
   - `scripts/send_cold_fixture.sh`
   - `scripts/send_insufficient_fixture.sh`
 - Keep scripts simple and transparent. Prefer readable `curl` commands over clever wrappers.
-- The fake provider should be the easiest no-credential path for local verification, but documentation should also show real provider environment variables.
+- The fake provider should remain test-only; documentation should show the real OpenAI provider environment variables for local server startup.
 - Do not add deployment or production hosting instructions in this slice.
 
 ## Review

@@ -24,7 +24,7 @@ The workflow calls the LLM sequentially: first ICP scoring, then route-specific 
 
 ## Provider abstraction
 
-The workflow depends on a provider interface. Fake, OpenAI, and OpenRouter providers share the same validation and repair path, which keeps tests deterministic while allowing real provider demos.
+The workflow depends on a provider interface. The test fake provider and the OpenAI provider share the same validation and repair path, which keeps tests deterministic while allowing real provider demos.
 
 ## Strict JSON validation and one repair
 

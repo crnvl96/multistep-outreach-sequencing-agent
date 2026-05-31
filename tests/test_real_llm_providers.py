@@ -11,7 +11,6 @@ from outreach_agent.llm import (
     LLMConfigurationError,
     LLMSettings,
     OpenAIRawLLMProvider,
-    OpenRouterRawLLMProvider,
     ValidatingLLMProvider,
     load_llm_settings,
     select_llm_provider,
@@ -92,20 +91,6 @@ def test_openai_provider_selection_uses_configured_model() -> None:
     assert provider.raw_provider.model == "gpt-4.1-mini"
 
 
-def test_openrouter_provider_selection_uses_configured_model() -> None:
-    provider = select_llm_provider(
-        LLMSettings(
-            provider="openrouter",
-            model="openai/gpt-4.1-mini",
-            openrouter_api_key="test-openrouter-key",
-        )
-    )
-
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenRouterRawLLMProvider)
-    assert provider.raw_provider.model == "openai/gpt-4.1-mini"
-
-
 def test_provider_selection_requires_configured_provider() -> None:
     with pytest.raises(LLMConfigurationError, match="LLM_PROVIDER is required"):
         select_llm_provider(LLMSettings())
@@ -125,9 +110,9 @@ def test_openai_selection_without_api_key_fails_clearly() -> None:
         select_llm_provider(LLMSettings(provider="openai"))
 
 
-def test_openrouter_selection_without_api_key_fails_clearly() -> None:
-    with pytest.raises(LLMConfigurationError, match="OPENROUTER_API_KEY"):
-        select_llm_provider(LLMSettings(provider="openrouter"))
+def test_unsupported_provider_fails_clearly() -> None:
+    with pytest.raises(ValueError, match="Unsupported LLM_PROVIDER: unsupported"):
+        select_llm_provider(LLMSettings(provider="unsupported"))
 
 
 def test_missing_provider_in_dotenv_has_no_fake_default(tmp_path: Path) -> None:
@@ -160,7 +145,7 @@ def test_provider_selection_uses_dotenv_without_environment_override(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("LLM_PROVIDER", "openrouter")
+    monkeypatch.setenv("LLM_PROVIDER", "unsupported-provider")
     monkeypatch.setenv("LLM_MODEL", "env-model")
     monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
 
@@ -191,19 +176,6 @@ def test_openai_provider_selection_uses_default_model() -> None:
     assert isinstance(provider, ValidatingLLMProvider)
     assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
     assert provider.raw_provider.model == "gpt-5.4-mini"
-
-
-def test_openrouter_provider_selection_uses_default_model() -> None:
-    provider = select_llm_provider(
-        LLMSettings(
-            provider="openrouter",
-            openrouter_api_key="test-openrouter-key",
-        )
-    )
-
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenRouterRawLLMProvider)
-    assert provider.raw_provider.model == "deepseek-v4-flash"
 
 
 def test_openai_scoring_request_includes_icp_profile_and_strict_json() -> None:
@@ -261,26 +233,6 @@ def test_openai_email_request_includes_route_sequence_scoring_and_fact_guard() -
     assert "Do not invent facts" in prompt
     assert "Generate only the first email" in prompt
     assert "personalization_notes" in prompt
-
-
-def test_openrouter_scoring_request_uses_openrouter_endpoint() -> None:
-    transport = RecordingChatTransport([json.dumps(valid_score())])
-    raw_provider = OpenRouterRawLLMProvider(
-        api_key="test-openrouter-key",
-        model="openai/gpt-4.1-mini",
-        transport=transport,
-    )
-
-    result = asyncio.run(
-        ValidatingLLMProvider(raw_provider).score_icp(complete_profile())
-    )
-
-    assert result.value.score == 92
-    assert transport.requests[0]["endpoint_url"] == (
-        "https://openrouter.ai/api/v1/chat/completions"
-    )
-    assert transport.requests[0]["api_key"] == "test-openrouter-key"
-    assert transport.requests[0]["model"] == "openai/gpt-4.1-mini"
 
 
 def test_real_provider_responses_flow_through_validation_and_repair() -> None:

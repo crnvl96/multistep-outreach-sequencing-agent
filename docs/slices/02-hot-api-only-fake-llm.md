@@ -47,7 +47,7 @@ This slice should establish the LLM provider interface used by the workflow, but
 
 ## Implementation notes
 
-- The design says real LLM behavior is required for normal demos, but the fake provider is explicitly allowed for tests/dev. This slice should not implement OpenAI/OpenRouter yet.
+- The design says real LLM behavior is required for normal demos, but the fake provider is explicitly allowed for tests/dev. This slice should not implement the real OpenAI provider yet.
 - Keep the LLM provider contract provider-agnostic so real providers can be added later without changing orchestration.
 - LLM calls are sequential by design: scoring first, route-specific email generation second.
 - Hot routing threshold: score 80-100, no critical missing data, and confidence/data confidence not low.

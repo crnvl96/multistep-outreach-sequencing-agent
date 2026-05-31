@@ -57,22 +57,7 @@ Then run:
 ./scripts/run_server.sh
 ```
 
-### OpenRouter provider
-
-```bash
-# .env
-LLM_PROVIDER=openrouter
-LLM_MODEL=<openrouter-model-name>
-OPENROUTER_API_KEY=<your-openrouter-api-key>
-```
-
-Then run:
-
-```bash
-./scripts/run_server.sh
-```
-
-If `LLM_PROVIDER` is missing, unsupported, set to `fake`, or points to a real provider without the matching API key, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests.
+If `LLM_PROVIDER` is missing, unsupported, set to `fake`, or OpenAI is selected without `OPENAI_API_KEY`, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests.
 
 ## Run artifacts
 
@@ -85,7 +70,7 @@ Reviewer-facing docs live under `docs/`:
 - `docs/architecture.md` documents the flat module layout, provider wiring, and import guard expectations.
 - `docs/roadmap.md` explains the MVP goal, fictional ICP, target persona, and implemented paths.
 - `docs/system-behavior.md` explains intake, enrichment, routing, sequence behavior, validation, and run artifacts.
-- `docs/provider-and-prompts.md` explains OpenAI/OpenRouter configuration, test fake-provider usage, prompt behavior, and prompt ownership.
+- `docs/provider-and-prompts.md` explains OpenAI configuration, test fake-provider usage, prompt behavior, and prompt ownership.
 - `docs/decisions.md` and `docs/tradeoffs.md` summarize major design choices and scope tradeoffs.
 
 ## Development checks
