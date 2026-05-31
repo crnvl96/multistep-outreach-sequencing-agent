@@ -6,7 +6,7 @@ The implementation follows the [design/spec artifact](design/multistep-outreach-
 
 Enrichment is mocked so the Hot, Warm, Cold, and Insufficient Data paths are deterministic and testable. The API-first and scrape-fallback decisions are still real application behavior, but no live scraping or third-party enrichment API is called.
 
-LLM scoring and email generation are real in OpenAI mode because model reasoning is central to the demo. A fake provider exists under `tests/` for automated tests only.
+LLM scoring and email generation are real in OpenAI mode because model reasoning is central to the demo. Fake LLM clients exist under `tests/` for automated tests only.
 
 ## Sequential LLM calls vs. parallelism
 

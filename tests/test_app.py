@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from outreach_agent.app import create_app
 from outreach_agent.llm import LLMSettings
-from support.fake_llm import FakeLLMProvider
+from support.fake_llm import FakeOpenAI
 
 
 def test_create_app_requires_openai_api_key_at_startup(
@@ -24,7 +24,7 @@ def test_create_app_requires_openai_api_key_at_startup(
         create_app(artifact_dir=tmp_path)
 
 
-def test_create_app_accepts_configured_default_provider_at_startup(
+def test_create_app_accepts_configured_default_openai_at_startup(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -50,9 +50,7 @@ def test_create_app_accepts_configured_default_provider_at_startup(
 def test_post_leads_routes_hot_fixture_with_fake_llm(
     tmp_path: Path,
 ) -> None:
-    client = TestClient(
-        create_app(artifact_dir=tmp_path, llm_provider=FakeLLMProvider())
-    )
+    client = TestClient(create_app(artifact_dir=tmp_path, openai=FakeOpenAI()))
     payload = {
         "lead_name": "Morgan Lee",
         "company_name": "NimbusForge AI",
@@ -108,9 +106,7 @@ def test_post_leads_routes_hot_fixture_with_fake_llm(
 def test_post_leads_routes_warm_fixture_after_scrape_fallback(
     tmp_path: Path,
 ) -> None:
-    client = TestClient(
-        create_app(artifact_dir=tmp_path, llm_provider=FakeLLMProvider())
-    )
+    client = TestClient(create_app(artifact_dir=tmp_path, openai=FakeOpenAI()))
     payload = {
         "lead_name": "Jordan Park",
         "company_name": "SignalSpring Software",
@@ -176,9 +172,7 @@ def test_post_leads_routes_warm_fixture_after_scrape_fallback(
 def test_post_leads_routes_cold_fixture_with_low_pressure_email(
     tmp_path: Path,
 ) -> None:
-    client = TestClient(
-        create_app(artifact_dir=tmp_path, llm_provider=FakeLLMProvider())
-    )
+    client = TestClient(create_app(artifact_dir=tmp_path, openai=FakeOpenAI()))
     payload = {
         "lead_name": "Casey Morgan",
         "company_name": "GreenFork Catering",
@@ -234,9 +228,7 @@ def test_post_leads_returns_insufficient_data_decision_chain(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    client = TestClient(
-        create_app(artifact_dir=tmp_path, llm_provider=FakeLLMProvider())
-    )
+    client = TestClient(create_app(artifact_dir=tmp_path, openai=FakeOpenAI()))
     payload = {
         "lead_name": "Riley Stone",
         "company_name": "PaperTrail Cafe",
@@ -302,9 +294,7 @@ def test_post_leads_rejects_invalid_payloads(
     tmp_path: Path,
     payload: dict[str, str],
 ) -> None:
-    client = TestClient(
-        create_app(artifact_dir=tmp_path, llm_provider=FakeLLMProvider())
-    )
+    client = TestClient(create_app(artifact_dir=tmp_path, openai=FakeOpenAI()))
 
     response = client.post("/leads", json=payload)
 

@@ -180,7 +180,7 @@ def apply_mock_enrichment(
     )
 
 
-class MockAPIEnrichmentProvider:
+class MockAPI:
     def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
         self.enrichment_data = enrichment_data or build_mock_enrichment_map("api")
 
@@ -188,7 +188,7 @@ class MockAPIEnrichmentProvider:
         return apply_mock_enrichment(profile, "api", self.enrichment_data)
 
 
-class MockScrapeEnrichmentProvider:
+class MockScrape:
     def __init__(self, enrichment_data: MockEnrichmentData | None = None) -> None:
         self.enrichment_data = enrichment_data or build_mock_enrichment_map("scrape")
 

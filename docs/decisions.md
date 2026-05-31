@@ -12,7 +12,7 @@ The workflow is implemented directly in Python. The goal is to demonstrate the o
 
 ## Deterministic mocked enrichment
 
-API enrichment and scraping are modeled as injectable providers, with concrete fixture-backed implementations `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` in `outreach_agent.enrichment`. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies.
+API enrichment and scraping are passed into the workflow as concrete fixture-backed dependencies: `MockAPI` and `MockScrape` in `outreach_agent.enrichment`. The application still models API-first enrichment, scrape fallback, thin-data checks, and max-one-pass behavior, but avoids live third-party dependencies.
 
 ## Application-owned routing
 
@@ -22,9 +22,9 @@ The LLM scores fit and explains evidence. The application maps score and confide
 
 The workflow calls the LLM sequentially: first ICP scoring, then route-specific email generation. This is slower than parallelism, but the second prompt depends on the deterministic route selected after scoring.
 
-## Simple provider injection
+## Concrete dependency parameters
 
-The app injects provider objects into the workflow instead of constructing them inside orchestration code. Tests inject fakes directly, while normal startup injects the OpenAI provider. This keeps behavior testable without maintaining separate protocol classes.
+The app passes dependency objects into the workflow instead of constructing them inside orchestration code. Normal startup passes concrete `MockAPI`, `MockScrape`, and `OpenAI` instances, and tests can pass concrete fakes directly. This keeps behavior testable without maintaining separate provider/protocol abstraction layers.
 
 ## Strict JSON validation and one repair
 

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from outreach_agent.llm import ValidatingLLMProvider
+from outreach_agent.llm import LLMCallResult, OpenAI
 from outreach_agent.models import (
     GeneratedEmail,
     IcpScore,
@@ -51,8 +51,11 @@ ScoreBuilder = Callable[[LeadProfile], IcpScore]
 EmailBuilder = Callable[[LeadProfile, IcpScore, Route, SequencePlan], GeneratedEmail]
 
 
-class FakeRawLLMProvider:
-    async def score_icp(self, profile: LeadProfile) -> IcpScore:
+class FakeOpenAI(OpenAI):
+    def __init__(self) -> None:
+        super().__init__(api_key="test-openai-key", model="test-openai-model")
+
+    async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
         fixture_key = fixture_key_for_profile(profile)
         try:
             build_score = FAKE_SCORE_BY_FIXTURE[fixture_key]
@@ -60,15 +63,7 @@ class FakeRawLLMProvider:
             raise ValueError(
                 f"No fake scoring fixture configured for {fixture_key}"
             ) from exc
-        return build_score(profile)
-
-    async def repair_score_icp(
-        self,
-        profile: LeadProfile,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> IcpScore:
-        return await self.score_icp(profile)
+        return LLMCallResult(value=build_score(profile), calls=("score_icp",))
 
     async def generate_first_email(
         self,
@@ -76,35 +71,17 @@ class FakeRawLLMProvider:
         scoring_result: IcpScore,
         final_route: Route,
         sequence: SequencePlan,
-    ) -> GeneratedEmail:
+    ) -> LLMCallResult[GeneratedEmail]:
         try:
             build_email = FAKE_EMAIL_BY_ROUTE[final_route]
         except KeyError as exc:
             raise ValueError(
                 f"No fake email fixture configured for route: {final_route}"
             ) from exc
-        return build_email(profile, scoring_result, final_route, sequence)
-
-    async def repair_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> GeneratedEmail:
-        return await self.generate_first_email(
-            profile,
-            scoring_result,
-            final_route,
-            sequence,
+        return LLMCallResult(
+            value=build_email(profile, scoring_result, final_route, sequence),
+            calls=("generate_first_email",),
         )
-
-
-class FakeLLMProvider(ValidatingLLMProvider):
-    def __init__(self) -> None:
-        super().__init__(FakeRawLLMProvider())
 
 
 def build_hot_score(profile: LeadProfile) -> IcpScore:

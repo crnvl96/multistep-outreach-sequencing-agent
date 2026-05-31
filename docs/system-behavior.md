@@ -35,8 +35,8 @@ Optional/evidence fields from the spec include `tech_stack`, `funding_stage`, `h
 Enrichment is deterministic and fixture-backed so demos and tests are repeatable.
 
 1. Enrichment step `source` values are logical labels: `api` and `scrape`.
-2. Enrichment is routed through two injectable providers: `MockAPIEnrichmentProvider` first, then `MockScrapeEnrichmentProvider` only if needed.
-3. Mock implementations of both providers are explicit and fixture-backed in `outreach_agent.enrichment`.
+2. Enrichment is routed through two concrete dependencies: `MockAPI` first, then `MockScrape` only if needed.
+3. Both enrichment dependencies are explicit and fixture-backed in `outreach_agent.enrichment`.
 4. The application still performs a thin-data check against required scoring fields.
 5. Mocked scraping runs only when the API result is still thin.
 6. Each source runs at most once per lead.
@@ -83,7 +83,7 @@ LLM email output must validate as strict JSON with:
 - `cta`
 - `personalization_notes`
 
-If either output is invalid, the validator makes exactly one repair attempt with a repair prompt. If repair also fails, the run returns status `llm_output_invalid`, records the failed step, and still writes the decision-chain artifact.
+If either output is invalid, the `OpenAI` client makes exactly one repair attempt with a repair prompt. If repair also fails, the run returns status `llm_output_invalid`, records the failed step, and still writes the decision-chain artifact.
 
 ## Run artifacts
 

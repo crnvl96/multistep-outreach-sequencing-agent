@@ -94,6 +94,6 @@ def test_urllib_chat_transport_posts_expected_request_and_returns_content(
 def test_extract_chat_completion_content_rejects_invalid_payload() -> None:
     with pytest.raises(
         RuntimeError,
-        match="LLM provider response did not match chat completion response shape",
+        match="OpenAI response did not match chat completion response shape",
     ):
         extract_chat_completion_content({"unexpected": "payload"})

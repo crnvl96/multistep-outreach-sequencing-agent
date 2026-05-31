@@ -6,24 +6,24 @@ The codebase keeps the reviewer-facing MVP intentionally small:
 
 - `src/outreach_agent/models.py` owns Pydantic request, response, scoring, route, email, and artifact models.
 - `src/outreach_agent/prompts.py` owns scoring, email, and repair prompt builders.
-- `src/outreach_agent/enrichment.py` owns deterministic fixture-backed API and scrape enrichment.
-- `src/outreach_agent/llm.py` owns provider configuration, the OpenAI chat completion client, response validation, and one-repair retry behavior.
+- `src/outreach_agent/enrichment.py` owns deterministic fixture-backed `MockAPI` and `MockScrape` enrichment.
+- `src/outreach_agent/llm.py` owns OpenAI configuration, the chat completion client, response validation, and one-repair retry behavior.
 - `src/outreach_agent/workflow.py` owns orchestration: enrichment, thin-data checks, scoring, deterministic route selection, email generation, and artifact persistence.
-- `src/outreach_agent/app.py` wires the FastAPI app and default providers.
+- `src/outreach_agent/app.py` wires the FastAPI app and default dependencies.
 
 This replaces the previous domain/protocols/integrations layer split. The goal is to make the MVP easier to read and review rather than optimize for long-term library extension.
 
-## Provider wiring
+## Dependency wiring
 
 For normal runtime startup:
 
 1. `create_app()` in `app.py` calls `load_llm_settings()` from `outreach_agent.llm`.
 2. `load_llm_settings()` reads only `OPENAI_API_KEY` from the project `.env` file.
-3. `select_llm_provider()` validates the API key and constructs the fixed OpenAI provider with `gpt-5.4-mini`.
-4. The selected raw OpenAI provider is wrapped with `ValidatingLLMProvider` for strict schema validation and one repair attempt.
-5. `create_app()` wires `MockAPIEnrichmentProvider` and `MockScrapeEnrichmentProvider` from `outreach_agent.enrichment`.
+3. `create_openai_client()` validates the API key and constructs the fixed `OpenAI` client with `gpt-5.4-mini`.
+4. The concrete `OpenAI` client performs strict schema validation and one repair attempt.
+5. `create_app()` wires `MockAPI` and `MockScrape` from `outreach_agent.enrichment`.
 
-Tests can still inject fake LLM or enrichment providers directly because the workflow only needs objects with the expected async methods.
+Workflow functions receive dependencies as parameters for testability, but they are typed to concrete `MockAPI`, `MockScrape`, and `OpenAI` classes instead of provider abstraction layers.
 
 ## Prompt ownership
 

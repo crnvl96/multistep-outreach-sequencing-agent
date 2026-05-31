@@ -4,7 +4,7 @@ Local FastAPI MVP for lead intake, deterministic enrichment, ICP scoring, Hot/Wa
 
 ## Quickstart
 
-This demo only supports OpenAI for normal local runs. The provider and model are fixed in code: OpenAI with `gpt-5.4-mini`. They cannot be overridden from `.env` or exported shell environment variables.
+This demo only supports OpenAI for normal local runs. The OpenAI client and model are fixed in code: OpenAI with `gpt-5.4-mini`. They cannot be overridden from `.env` or exported shell environment variables.
 
 Copy `.env.example` to `.env` and set the only required value:
 
@@ -42,9 +42,9 @@ If your server is running on another host or port, set `BASE_URL`:
 BASE_URL=http://127.0.0.1:8000 ./scripts/send_hot_fixture.sh
 ```
 
-## Provider configuration
+## OpenAI configuration
 
-Provider settings are intentionally not configurable for this demo. Normal startup always uses the OpenAI provider and the fixed default model `gpt-5.4-mini`.
+LLM settings are intentionally not configurable for this demo. Normal startup always uses the concrete OpenAI client and the fixed default model `gpt-5.4-mini`.
 
 The only `.env` setting the user must provide is:
 
@@ -54,7 +54,7 @@ OPENAI_API_KEY=<your-openai-api-key>
 
 Use `.env.example` as the reference for required local configuration. Exported shell environment variables are ignored by this simplified local configuration.
 
-If `OPENAI_API_KEY` is missing, startup fails with a clear configuration error. The fake provider is only injected directly by automated tests and is not available through `.env`.
+If `OPENAI_API_KEY` is missing, startup fails with a clear configuration error. Test fakes are only passed directly by automated tests and are not available through `.env`.
 
 ## Run artifacts
 
@@ -64,10 +64,10 @@ Every request writes a timestamped JSON decision-chain artifact under `runs/`. T
 
 Reviewer-facing docs live under `docs/`:
 
-- `docs/architecture.md` documents the flat module layout, provider wiring, and import guard expectations.
+- `docs/architecture.md` documents the flat module layout, dependency wiring, and import guard expectations.
 - `docs/roadmap.md` explains the MVP goal, fictional ICP, target persona, and implemented paths.
 - `docs/system-behavior.md` explains intake, enrichment, routing, sequence behavior, validation, and run artifacts.
-- `docs/provider-and-prompts.md` explains OpenAI configuration, test fake-provider usage, prompt behavior, and prompt ownership.
+- `docs/provider-and-prompts.md` explains OpenAI configuration, test fake usage, prompt behavior, and prompt ownership.
 - `docs/decisions.md` and `docs/tradeoffs.md` summarize major design choices and scope tradeoffs.
 
 ## Development checks

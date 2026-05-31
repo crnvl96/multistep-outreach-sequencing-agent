@@ -4,17 +4,11 @@ from pathlib import Path
 from typing import Any
 
 from outreach_agent.enrichment import (
-    MockAPIEnrichmentProvider,
-    MockScrapeEnrichmentProvider,
+    MockAPI,
+    MockScrape,
 )
-from outreach_agent.llm import ValidatingLLMProvider
-from outreach_agent.models import (
-    IcpScore,
-    LeadIntake,
-    LeadProfile,
-    Route,
-    SequencePlan,
-)
+from outreach_agent.llm import OpenAI
+from outreach_agent.models import LeadIntake
 from outreach_agent.workflow import process_lead
 
 
@@ -46,79 +40,61 @@ def valid_email() -> dict[str, Any]:
     }
 
 
-class ScriptedRepairProvider:
-    def __init__(
-        self,
-        *,
-        score_output: object = None,
-        score_repair_output: object = None,
-        email_output: object = None,
-        email_repair_output: object = None,
-    ) -> None:
-        self.score_output = valid_score() if score_output is None else score_output
-        self.score_repair_output = (
-            valid_score() if score_repair_output is None else score_repair_output
-        )
-        self.email_output = valid_email() if email_output is None else email_output
-        self.email_repair_output = (
-            valid_email() if email_repair_output is None else email_repair_output
-        )
+class ScriptedChatTransport:
+    def __init__(self, outputs: list[object]) -> None:
+        self.outputs = outputs
         self.score_repairs = 0
         self.email_repairs = 0
         self.score_repair_prompt = ""
         self.email_repair_prompt = ""
 
-    async def score_icp(self, profile: LeadProfile) -> object:
-        return self.score_output
-
-    async def repair_score_icp(
+    async def create_chat_completion(
         self,
-        profile: LeadProfile,
-        invalid_output: object,
-        repair_prompt: str,
+        *,
+        endpoint_url: str,
+        api_key: str,
+        model: str,
+        messages: list[dict[str, str]],
     ) -> object:
-        self.score_repairs += 1
-        self.score_repair_prompt = repair_prompt
-        return self.score_repair_output
+        repair_prompt = messages[-1]["content"]
+        if "Validation error" in repair_prompt:
+            if "scoring schema" in repair_prompt:
+                self.score_repairs += 1
+                self.score_repair_prompt = repair_prompt
+            elif "email generation schema" in repair_prompt:
+                self.email_repairs += 1
+                self.email_repair_prompt = repair_prompt
 
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> object:
-        return self.email_output
+        output = self.outputs.pop(0)
+        return json.dumps(output) if isinstance(output, dict) else output
 
-    async def repair_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object:
-        self.email_repairs += 1
-        self.email_repair_prompt = repair_prompt
-        return self.email_repair_output
+
+def openai_with_transport(transport: ScriptedChatTransport) -> OpenAI:
+    return OpenAI(
+        api_key="test-openai-key",
+        model="test-openai-model",
+        transport=transport,
+    )
 
 
 def test_invalid_scoring_output_is_repaired_once_and_recorded(
     tmp_path: Path,
 ) -> None:
-    provider = ScriptedRepairProvider(
-        score_output="{not valid json",
-        score_repair_output=json.dumps(valid_score()),
+    provider = ScriptedChatTransport(
+        [
+            "{not valid json",
+            json.dumps(valid_score()),
+            valid_email(),
+        ]
     )
 
     response = asyncio.run(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
-            api_enrichment_provider=MockAPIEnrichmentProvider(),
-            scrape_enrichment_provider=MockScrapeEnrichmentProvider(),
-            llm_provider=ValidatingLLMProvider(provider),
+            api=MockAPI(),
+            scrape=MockScrape(),
+            openai=openai_with_transport(provider),
         )
     )
 
@@ -157,18 +133,21 @@ def test_invalid_scoring_output_is_repaired_once_and_recorded(
 def test_invalid_email_output_is_repaired_once_and_recorded(
     tmp_path: Path,
 ) -> None:
-    provider = ScriptedRepairProvider(
-        email_output={"subject": "Missing required email fields"},
-        email_repair_output=json.dumps(valid_email()),
+    provider = ScriptedChatTransport(
+        [
+            valid_score(),
+            {"subject": "Missing required email fields"},
+            json.dumps(valid_email()),
+        ]
     )
 
     response = asyncio.run(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
-            api_enrichment_provider=MockAPIEnrichmentProvider(),
-            scrape_enrichment_provider=MockScrapeEnrichmentProvider(),
-            llm_provider=ValidatingLLMProvider(provider),
+            api=MockAPI(),
+            scrape=MockScrape(),
+            openai=openai_with_transport(provider),
         )
     )
 
@@ -207,18 +186,20 @@ def test_invalid_email_output_is_repaired_once_and_recorded(
 def test_failed_scoring_repair_returns_error_and_persists_artifact(
     tmp_path: Path,
 ) -> None:
-    provider = ScriptedRepairProvider(
-        score_output={"score": 92},
-        score_repair_output={"score": "still invalid"},
+    provider = ScriptedChatTransport(
+        [
+            {"score": 92},
+            {"score": "still invalid"},
+        ]
     )
 
     response = asyncio.run(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
-            api_enrichment_provider=MockAPIEnrichmentProvider(),
-            scrape_enrichment_provider=MockScrapeEnrichmentProvider(),
-            llm_provider=ValidatingLLMProvider(provider),
+            api=MockAPI(),
+            scrape=MockScrape(),
+            openai=openai_with_transport(provider),
         )
     )
 
@@ -251,18 +232,21 @@ def test_failed_scoring_repair_returns_error_and_persists_artifact(
 def test_failed_email_repair_returns_error_and_persists_decision_chain(
     tmp_path: Path,
 ) -> None:
-    provider = ScriptedRepairProvider(
-        email_output="not json",
-        email_repair_output={"subject": "Still missing required email fields"},
+    provider = ScriptedChatTransport(
+        [
+            valid_score(),
+            "not json",
+            {"subject": "Still missing required email fields"},
+        ]
     )
 
     response = asyncio.run(
         process_lead(
             hot_intake(),
             artifact_dir=tmp_path,
-            api_enrichment_provider=MockAPIEnrichmentProvider(),
-            scrape_enrichment_provider=MockScrapeEnrichmentProvider(),
-            llm_provider=ValidatingLLMProvider(provider),
+            api=MockAPI(),
+            scrape=MockScrape(),
+            openai=openai_with_transport(provider),
         )
     )
 

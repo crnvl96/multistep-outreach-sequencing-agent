@@ -9,10 +9,9 @@ from outreach_agent.llm import (
     DEFAULT_DOTENV_PATH,
     LLMConfigurationError,
     LLMSettings,
-    OpenAIRawLLMProvider,
-    ValidatingLLMProvider,
+    OpenAI,
+    create_openai_client,
     load_llm_settings,
-    select_llm_provider,
 )
 from outreach_agent.models import IcpScore, LeadProfile
 from outreach_agent.workflow import select_sequence
@@ -76,40 +75,36 @@ class RecordingChatTransport:
         return self.outputs.pop(0)
 
 
-def test_openai_provider_selection_uses_fixed_model() -> None:
-    provider = select_llm_provider(
-        LLMSettings(openai_api_key="test-openai-key")
-    )
+def test_create_openai_client_uses_fixed_model() -> None:
+    openai = create_openai_client(LLMSettings(openai_api_key="test-openai-key"))
 
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.model == "gpt-5.4-mini"
+    assert isinstance(openai, OpenAI)
+    assert openai.model == "gpt-5.4-mini"
 
 
-def test_provider_selection_requires_openai_api_key() -> None:
+def test_create_openai_client_requires_openai_api_key() -> None:
     with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY is required"):
-        select_llm_provider(LLMSettings())
+        create_openai_client(LLMSettings())
 
 
 def test_default_dotenv_points_to_project_root() -> None:
     assert DEFAULT_DOTENV_PATH == Path.cwd() / ".env"
 
 
-def test_provider_selection_reads_openai_api_key_from_dotenv_file(
+def test_create_openai_client_reads_openai_api_key_from_dotenv_file(
     tmp_path: Path,
 ) -> None:
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
 
-    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
+    openai = create_openai_client(load_llm_settings(dotenv_path=dotenv_path))
 
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.api_key == "dotenv-openai-key"
-    assert provider.raw_provider.model == "gpt-5.4-mini"
+    assert isinstance(openai, OpenAI)
+    assert openai.api_key == "dotenv-openai-key"
+    assert openai.model == "gpt-5.4-mini"
 
 
-def test_provider_selection_uses_dotenv_without_environment_override(
+def test_create_openai_client_uses_dotenv_without_environment_override(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -120,42 +115,36 @@ def test_provider_selection_uses_dotenv_without_environment_override(
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
 
-    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
+    openai = create_openai_client(load_llm_settings(dotenv_path=dotenv_path))
 
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.api_key == "dotenv-openai-key"
-    assert provider.raw_provider.model == "gpt-5.4-mini"
+    assert isinstance(openai, OpenAI)
+    assert openai.api_key == "dotenv-openai-key"
+    assert openai.model == "gpt-5.4-mini"
 
 
-def test_dotenv_provider_and_model_values_are_ignored(tmp_path: Path) -> None:
+def test_dotenv_legacy_model_values_are_ignored(tmp_path: Path) -> None:
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text(
-        "LLM_PROVIDER=fake\n"
-        "LLM_MODEL=gpt-4.1-mini\n"
-        "OPENAI_API_KEY=dotenv-openai-key\n",
+        "LLM_PROVIDER=fake\nLLM_MODEL=gpt-4.1-mini\nOPENAI_API_KEY=dotenv-openai-key\n",
         encoding="utf-8",
     )
 
-    provider = select_llm_provider(load_llm_settings(dotenv_path=dotenv_path))
+    openai = create_openai_client(load_llm_settings(dotenv_path=dotenv_path))
 
-    assert isinstance(provider, ValidatingLLMProvider)
-    assert isinstance(provider.raw_provider, OpenAIRawLLMProvider)
-    assert provider.raw_provider.api_key == "dotenv-openai-key"
-    assert provider.raw_provider.model == "gpt-5.4-mini"
+    assert isinstance(openai, OpenAI)
+    assert openai.api_key == "dotenv-openai-key"
+    assert openai.model == "gpt-5.4-mini"
 
 
 def test_openai_scoring_request_includes_icp_profile_and_strict_json() -> None:
     transport = RecordingChatTransport([json.dumps(valid_score())])
-    raw_provider = OpenAIRawLLMProvider(
+    openai = OpenAI(
         api_key="test-openai-key",
         model="gpt-4.1-mini",
         transport=transport,
     )
 
-    result = asyncio.run(
-        ValidatingLLMProvider(raw_provider).score_icp(complete_profile())
-    )
+    result = asyncio.run(openai.score_icp(complete_profile()))
 
     assert result.value.score == 92
     assert len(transport.requests) == 1
@@ -173,7 +162,7 @@ def test_openai_scoring_request_includes_icp_profile_and_strict_json() -> None:
 
 def test_openai_email_request_includes_route_sequence_scoring_and_fact_guard() -> None:
     transport = RecordingChatTransport([json.dumps(valid_email())])
-    raw_provider = OpenAIRawLLMProvider(
+    openai = OpenAI(
         api_key="test-openai-key",
         model="gpt-4.1-mini",
         transport=transport,
@@ -182,7 +171,7 @@ def test_openai_email_request_includes_route_sequence_scoring_and_fact_guard() -
     sequence = select_sequence("hot")
 
     result = asyncio.run(
-        ValidatingLLMProvider(raw_provider).generate_first_email(
+        openai.generate_first_email(
             complete_profile(),
             scoring_result,
             "hot",
@@ -202,22 +191,20 @@ def test_openai_email_request_includes_route_sequence_scoring_and_fact_guard() -
     assert "personalization_notes" in prompt
 
 
-def test_real_provider_responses_flow_through_validation_and_repair() -> None:
+def test_openai_responses_flow_through_validation_and_repair() -> None:
     transport = RecordingChatTransport(
         [
             json.dumps({"score": 92}),
             json.dumps(valid_score()),
         ]
     )
-    raw_provider = OpenAIRawLLMProvider(
+    openai = OpenAI(
         api_key="test-openai-key",
         model="gpt-4.1-mini",
         transport=transport,
     )
 
-    result = asyncio.run(
-        ValidatingLLMProvider(raw_provider).score_icp(complete_profile())
-    )
+    result = asyncio.run(openai.score_icp(complete_profile()))
 
     assert result.value.score == 92
     assert result.calls == ("score_icp", "repair_score_icp")

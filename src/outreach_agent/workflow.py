@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Literal
+from typing import Literal
 from uuid import uuid4
 
-from outreach_agent.llm import LLMOutputInvalidError
+from outreach_agent.enrichment import MockAPI, MockScrape
+from outreach_agent.llm import LLMOutputInvalidError, OpenAI
 from outreach_agent.models import (
     EnrichmentStep,
     GeneratedEmail,
@@ -160,9 +161,9 @@ async def process_lead(
     intake: LeadIntake,
     *,
     artifact_dir: Path = RUNS_DIR,
-    api_enrichment_provider: Any,
-    scrape_enrichment_provider: Any,
-    llm_provider: Any,
+    api: MockAPI,
+    scrape: MockScrape,
+    openai: OpenAI,
 ) -> LeadRunResponse:
     started_at = datetime.now(UTC)
     started_timer = perf_counter()
@@ -173,14 +174,14 @@ async def process_lead(
 
     profile = LeadProfile(**intake.model_dump())
 
-    profile, api_step = await api_enrichment_provider.enrich(profile)
+    profile, api_step = await api.enrich(profile)
     enrichment_steps.append(api_step)
 
     first_check = check_thin_data(profile, stage="after_api_enrichment")
     thin_data_checks.append(first_check)
 
     if first_check.is_thin:
-        profile, scrape_step = await scrape_enrichment_provider.enrich(profile)
+        profile, scrape_step = await scrape.enrich(profile)
         enrichment_steps.append(scrape_step)
         thin_data_checks.append(
             check_thin_data(profile, stage="after_scrape_enrichment")
@@ -202,7 +203,7 @@ async def process_lead(
     ] = "insufficient_data"
 
     if not final_check.is_thin:
-        llm_phase = await run_llm_phase(profile, llm_provider)
+        llm_phase = await run_llm_phase(profile, openai)
         status = llm_phase.status
         llm_calls = llm_phase.llm_calls
         llm_repairs = llm_phase.llm_repairs
@@ -246,7 +247,7 @@ async def process_lead(
 
 async def run_llm_phase(
     profile: LeadProfile,
-    llm_provider: Any,
+    openai: OpenAI,
 ) -> LLMPhaseOutcome:
     llm_calls: list[str] = []
     llm_repairs: list[LLMRepairAttempt] = []
@@ -255,7 +256,7 @@ async def run_llm_phase(
     selected_sequence: SequencePlan | None = None
 
     try:
-        score_call = await llm_provider.score_icp(profile)
+        score_call = await openai.score_icp(profile)
         llm_calls.extend(score_call.calls)
         llm_repairs.extend(score_call.repairs)
         scoring_result = score_call.value
@@ -263,7 +264,7 @@ async def run_llm_phase(
         final_route = route_from_score(scoring_result)
         selected_sequence = select_sequence(final_route)
 
-        email_call = await llm_provider.generate_first_email(
+        email_call = await openai.generate_first_email(
             profile,
             scoring_result,
             final_route,

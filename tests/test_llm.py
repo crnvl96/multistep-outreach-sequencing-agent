@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 from outreach_agent.models import LeadProfile
-from support.fake_llm import FakeLLMProvider
+from support.fake_llm import FakeOpenAI
 
 
 def test_fake_llm_fails_loudly_for_unknown_fixture() -> None:
@@ -20,4 +20,4 @@ def test_fake_llm_fails_loudly_for_unknown_fixture() -> None:
     )
 
     with pytest.raises(ValueError, match="No mock lead fixture configured"):
-        asyncio.run(FakeLLMProvider().score_icp(profile))
+        asyncio.run(FakeOpenAI().score_icp(profile))

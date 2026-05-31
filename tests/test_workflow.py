@@ -4,7 +4,8 @@ from typing import Literal
 
 import pytest
 
-from outreach_agent.llm import LLMCallResult
+from outreach_agent.enrichment import MockAPI, MockScrape
+from outreach_agent.llm import LLMCallResult, OpenAI
 from outreach_agent.models import (
     Confidence,
     EnrichmentStep,
@@ -18,7 +19,7 @@ from outreach_agent.models import (
 from outreach_agent.workflow import process_lead, route_from_score
 
 
-class TrackingEnrichmentProvider:
+class TrackingEnrichment:
     def __init__(
         self,
         enriched_profile: LeadProfile,
@@ -40,7 +41,18 @@ class TrackingEnrichmentProvider:
         )
 
 
-class DeterministicLLMProvider:
+class TrackingMockAPI(TrackingEnrichment, MockAPI):
+    pass
+
+
+class TrackingMockScrape(TrackingEnrichment, MockScrape):
+    pass
+
+
+class DeterministicOpenAI(OpenAI):
+    def __init__(self) -> None:
+        super().__init__(api_key="test-openai-key", model="test-openai-model")
+
     async def score_icp(self, profile: LeadProfile) -> LLMCallResult[IcpScore]:
         score = IcpScore(
             score=72,
@@ -144,7 +156,7 @@ def test_process_lead_runs_scrape_after_thin_api_result(
         }
     )
 
-    api_provider = TrackingEnrichmentProvider(
+    api = TrackingMockAPI(
         api_profile,
         source="api",
         fields_added=[
@@ -155,7 +167,7 @@ def test_process_lead_runs_scrape_after_thin_api_result(
         ],
         data={},
     )
-    scrape_provider = TrackingEnrichmentProvider(
+    scrape = TrackingMockScrape(
         scrape_profile,
         source="scrape",
         fields_added=["company_description", "business_signals"],
@@ -166,9 +178,9 @@ def test_process_lead_runs_scrape_after_thin_api_result(
         process_lead(
             intake,
             artifact_dir=tmp_path,
-            api_enrichment_provider=api_provider,
-            scrape_enrichment_provider=scrape_provider,
-            llm_provider=DeterministicLLMProvider(),
+            api=api,
+            scrape=scrape,
+            openai=DeterministicOpenAI(),
         )
     )
 
@@ -176,8 +188,8 @@ def test_process_lead_runs_scrape_after_thin_api_result(
     assert len(response.thin_data_checks) == 2
     assert response.thin_data_checks[0].is_thin is True
     assert response.thin_data_checks[1].is_thin is False
-    assert api_provider.calls == [LeadProfile(**intake.model_dump())]
-    assert scrape_provider.calls == [api_profile]
+    assert api.calls == [LeadProfile(**intake.model_dump())]
+    assert scrape.calls == [api_profile]
     assert response.llm_calls == ["score_icp", "generate_first_email"]
 
 
@@ -203,13 +215,13 @@ def test_process_lead_skips_scrape_when_api_enrichment_is_complete(
         ),
         business_signals=["scaling outbound"],
     )
-    api_provider = TrackingEnrichmentProvider(
+    api = TrackingMockAPI(
         api_profile,
         source="api",
         fields_added=[],
         data={},
     )
-    scrape_provider = TrackingEnrichmentProvider(
+    scrape = TrackingMockScrape(
         api_profile,
         source="scrape",
         fields_added=[],
@@ -220,9 +232,9 @@ def test_process_lead_skips_scrape_when_api_enrichment_is_complete(
         process_lead(
             intake,
             artifact_dir=tmp_path,
-            api_enrichment_provider=api_provider,
-            scrape_enrichment_provider=scrape_provider,
-            llm_provider=DeterministicLLMProvider(),
+            api=api,
+            scrape=scrape,
+            openai=DeterministicOpenAI(),
         )
     )
 
@@ -230,7 +242,7 @@ def test_process_lead_skips_scrape_when_api_enrichment_is_complete(
     assert len(response.thin_data_checks) == 1
     assert response.thin_data_checks[0].is_thin is False
     assert response.llm_calls == ["score_icp", "generate_first_email"]
-    assert scrape_provider.calls == []
+    assert scrape.calls == []
     assert response.generated_email is not None
     assert response.generated_email.subject == "Test - subject"
     assert response.generated_email.body == "Morgan's test - body"
@@ -266,13 +278,13 @@ def test_process_lead_stops_before_llm_when_scrape_still_thin(
         }
     )
 
-    api_provider = TrackingEnrichmentProvider(
+    api = TrackingMockAPI(
         api_profile,
         source="api",
         fields_added=["industry", "region"],
         data={},
     )
-    scrape_provider = TrackingEnrichmentProvider(
+    scrape = TrackingMockScrape(
         scrape_profile,
         source="scrape",
         fields_added=["company_description"],
@@ -283,9 +295,9 @@ def test_process_lead_stops_before_llm_when_scrape_still_thin(
         process_lead(
             intake,
             artifact_dir=tmp_path,
-            api_enrichment_provider=api_provider,
-            scrape_enrichment_provider=scrape_provider,
-            llm_provider=DeterministicLLMProvider(),
+            api=api,
+            scrape=scrape,
+            openai=DeterministicOpenAI(),
         )
     )
 

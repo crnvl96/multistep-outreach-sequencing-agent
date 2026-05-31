@@ -81,15 +81,13 @@ def load_llm_settings(
     return LLMSettings(openai_api_key=dotenv_env.get("OPENAI_API_KEY"))
 
 
-def select_llm_provider(settings: LLMSettings) -> ValidatingLLMProvider:
+def create_openai_client(settings: LLMSettings) -> OpenAI:
     if not settings.openai_api_key:
         raise LLMConfigurationError("OPENAI_API_KEY is required")
 
-    return ValidatingLLMProvider(
-        OpenAIRawLLMProvider(
-            api_key=settings.openai_api_key,
-            model=DEFAULT_OPENAI_MODEL,
-        )
+    return OpenAI(
+        api_key=settings.openai_api_key,
+        model=DEFAULT_OPENAI_MODEL,
     )
 
 
@@ -153,10 +151,10 @@ class UrllibChatTransport:
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(
-                f"LLM provider request failed with HTTP {exc.code}: {detail}"
+                f"OpenAI request failed with HTTP {exc.code}: {detail}"
             ) from exc
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"LLM provider request failed: {exc.reason}") from exc
+            raise RuntimeError(f"OpenAI request failed: {exc.reason}") from exc
 
         return extract_chat_completion_content(json.loads(response_body))
 
@@ -166,12 +164,12 @@ def extract_chat_completion_content(response_payload: object) -> str:
         response = ChatCompletionResponse.model_validate(response_payload)
     except ValidationError as exc:
         raise RuntimeError(
-            "LLM provider response did not match chat completion response shape"
+            "OpenAI response did not match chat completion response shape"
         ) from exc
     return response.choices[0].message.content
 
 
-class OpenAIRawLLMProvider:
+class OpenAI:
     def __init__(
         self,
         *,
@@ -183,21 +181,34 @@ class OpenAIRawLLMProvider:
         self.model = model
         self.transport = transport or UrllibChatTransport()
 
-    async def score_icp(self, profile: LeadProfile) -> object:
-        return await self.complete(build_scoring_messages(profile))
-
-    async def repair_score_icp(
+    async def score_icp(
         self,
         profile: LeadProfile,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object:
-        return await self.complete(
-            build_repair_messages(
-                build_scoring_messages(profile),
-                invalid_output,
-                repair_prompt,
+    ) -> LLMCallResult[IcpScore]:
+        scoring_messages = build_scoring_messages(profile)
+
+        async def call_openai() -> object:
+            return await self.complete(scoring_messages)
+
+        async def repair_openai(
+            invalid_output: object,
+            repair_prompt: str,
+        ) -> object:
+            return await self.complete(
+                build_repair_messages(
+                    scoring_messages,
+                    invalid_output,
+                    repair_prompt,
+                )
             )
+
+        return await call_with_one_repair(
+            call="score_icp",
+            repair_call="repair_score_icp",
+            schema=IcpScore,
+            prompt_label="scoring",
+            initial_call=call_openai,
+            repair_attempt=repair_openai,
         )
 
     async def generate_first_email(
@@ -206,26 +217,36 @@ class OpenAIRawLLMProvider:
         scoring_result: IcpScore,
         final_route: Route,
         sequence: SequencePlan,
-    ) -> object:
-        return await self.complete(
-            build_email_messages(profile, scoring_result, final_route, sequence)
+    ) -> LLMCallResult[GeneratedEmail]:
+        email_messages = build_email_messages(
+            profile,
+            scoring_result,
+            final_route,
+            sequence,
         )
 
-    async def repair_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-        invalid_output: object,
-        repair_prompt: str,
-    ) -> object:
-        return await self.complete(
-            build_repair_messages(
-                build_email_messages(profile, scoring_result, final_route, sequence),
-                invalid_output,
-                repair_prompt,
+        async def call_openai() -> object:
+            return await self.complete(email_messages)
+
+        async def repair_openai(
+            invalid_output: object,
+            repair_prompt: str,
+        ) -> object:
+            return await self.complete(
+                build_repair_messages(
+                    email_messages,
+                    invalid_output,
+                    repair_prompt,
+                )
             )
+
+        return await call_with_one_repair(
+            call="generate_first_email",
+            repair_call="repair_first_email",
+            schema=GeneratedEmail,
+            prompt_label="email generation",
+            initial_call=call_openai,
+            repair_attempt=repair_openai,
         )
 
     async def complete(self, messages: list[dict[str, str]]) -> str:
@@ -237,91 +258,23 @@ class OpenAIRawLLMProvider:
         )
 
 
-class ValidatingLLMProvider:
-    def __init__(self, raw_provider: Any) -> None:
-        self.raw_provider = raw_provider
-
-    async def score_icp(
-        self,
-        profile: LeadProfile,
-    ) -> LLMCallResult[IcpScore]:
-        async def call_provider() -> object:
-            return await self.raw_provider.score_icp(profile)
-
-        async def repair_provider(
-            invalid_output: object,
-            repair_prompt: str,
-        ) -> object:
-            return await self.raw_provider.repair_score_icp(
-                profile,
-                invalid_output,
-                repair_prompt,
-            )
-
-        return await call_with_one_repair(
-            call="score_icp",
-            repair_call="repair_score_icp",
-            schema=IcpScore,
-            prompt_label="scoring",
-            call_provider=call_provider,
-            repair_provider=repair_provider,
-        )
-
-    async def generate_first_email(
-        self,
-        profile: LeadProfile,
-        scoring_result: IcpScore,
-        final_route: Route,
-        sequence: SequencePlan,
-    ) -> LLMCallResult[GeneratedEmail]:
-        async def call_provider() -> object:
-            return await self.raw_provider.generate_first_email(
-                profile,
-                scoring_result,
-                final_route,
-                sequence,
-            )
-
-        async def repair_provider(
-            invalid_output: object,
-            repair_prompt: str,
-        ) -> object:
-            return await self.raw_provider.repair_first_email(
-                profile,
-                scoring_result,
-                final_route,
-                sequence,
-                invalid_output,
-                repair_prompt,
-            )
-
-        return await call_with_one_repair(
-            call="generate_first_email",
-            repair_call="repair_first_email",
-            schema=GeneratedEmail,
-            prompt_label="email generation",
-            call_provider=call_provider,
-            repair_provider=repair_provider,
-        )
-
-
 async def call_with_one_repair[StructuredOutput: BaseModel](
     *,
     call: LLMCall,
     repair_call: str,
     schema: type[StructuredOutput],
     prompt_label: str,
-    call_provider: Callable[[], Awaitable[object]],
-    repair_provider: Callable[[object, str], Awaitable[object]],
+    initial_call: Callable[[], Awaitable[object]],
+    repair_attempt: Callable[[object, str], Awaitable[object]],
 ) -> LLMCallResult[StructuredOutput]:
-    output = await call_provider()
+    output = await initial_call()
     calls = (call,)
 
     try:
         value = parse_structured_output(output, schema, call)
 
     except LLMOutputInvalidError as exc:
-        repair_output = await repair_provider(
+        repair_output = await repair_attempt(
             output,
             build_repair_prompt(schema, prompt_label, exc),
         )
